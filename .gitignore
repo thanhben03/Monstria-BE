@@ -1,0 +1,16 @@
+# Build outputs
+*.so
+*.exe
+*.dll
+*.dylib
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
