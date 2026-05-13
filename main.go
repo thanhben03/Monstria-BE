@@ -22,6 +22,11 @@ func InitModule(
 		return err
 	}
 
+	err = RegisterAuthHooks(initializer)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
