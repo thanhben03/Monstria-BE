@@ -36,6 +36,13 @@ func InitModule(
 		return err
 	}
 
+	if err := initializer.RegisterRpc("get_player_cloud_layers", GetPlayerCloudLayersRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("update_cloud_layers", UpdateCloudLayersRPC); err != nil {
+		return err
+	}
+
 	err = RegisterAuthHooks(initializer)
 	if err != nil {
 		return err

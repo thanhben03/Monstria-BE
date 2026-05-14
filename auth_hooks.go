@@ -107,6 +107,11 @@ func handleAfterAuthenticate(
 		return err
 	}
 
-	logger.Info("Initialized default resources, inventory, and garden for user %s", userID)
+	if err := initPlayerCloudLayers(ctx, nk, userID); err != nil {
+		logger.Error("Init player cloud layers failed for user %s: %v", userID, err)
+		return err
+	}
+
+	logger.Info("Initialized default resources, inventory, garden, and cloud layers for user %s", userID)
 	return nil
 }

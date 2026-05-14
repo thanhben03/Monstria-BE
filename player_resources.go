@@ -13,16 +13,18 @@ const (
 )
 
 type PlayerResources struct {
-	Coin   int `json:"coin"`
-	Gem    int `json:"gem"`
-	Energy int `json:"energy"`
+	Coin                  int `json:"coin"`
+	Gem                   int `json:"gem"`
+	Energy                int `json:"energy"`
+	UnlockedCloudLayers   int `json:"unlockedCloudLayers"`
 }
 
 func initPlayerResources(ctx context.Context, nk runtime.NakamaModule, userID string) error {
 	defaultResources := PlayerResources{
-		Coin:   1000,
-		Gem:    50,
-		Energy: 100,
+		Coin:                1000,
+		Gem:                 50,
+		Energy:              100,
+		UnlockedCloudLayers: 1,
 	}
 
 	raw, err := json.Marshal(defaultResources)
