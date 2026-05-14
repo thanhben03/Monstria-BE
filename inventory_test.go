@@ -23,6 +23,22 @@ func TestNormalizePots_mergeAndSort(t *testing.T) {
 	}
 }
 
+func TestConsumeOnePot(t *testing.T) {
+	inv := PlayerInventory{Pots: []PotStack{
+		{ItemID: "pot_wood", Quantity: 2},
+		{ItemID: "pot_gold", Quantity: 1},
+	}}
+	if err := ConsumeOnePot(&inv, "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ConsumeOnePot(&inv, "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ConsumeOnePot(&inv, "pot_wood"); err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 func TestNormalizePots_dropInvalid(t *testing.T) {
 	got, err := normalizePots([]PotStack{
 		{ItemID: "", Quantity: 1},

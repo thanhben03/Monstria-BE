@@ -102,6 +102,11 @@ func handleAfterAuthenticate(
 		return err
 	}
 
-	logger.Info("Initialized default resources and inventory for user %s", userID)
+	if err := initPlayerGarden(ctx, nk, userID); err != nil {
+		logger.Error("Init player garden failed for user %s: %v", userID, err)
+		return err
+	}
+
+	logger.Info("Initialized default resources, inventory, and garden for user %s", userID)
 	return nil
 }

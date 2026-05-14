@@ -29,6 +29,13 @@ func InitModule(
 		return err
 	}
 
+	if err := initializer.RegisterRpc("get_player_garden", GetPlayerGardenRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("place_pot_on_slot", PlacePotOnSlotRPC); err != nil {
+		return err
+	}
+
 	err = RegisterAuthHooks(initializer)
 	if err != nil {
 		return err

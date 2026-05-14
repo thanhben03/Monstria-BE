@@ -117,3 +117,26 @@ func normalizePots(pots []PotStack) ([]PotStack, error) {
 	sort.Slice(out, func(i, j int) bool { return out[i].ItemID < out[j].ItemID })
 	return out, nil
 }
+
+// ConsumeOnePot removes one unit of itemID from inv (mutates inv).
+func ConsumeOnePot(inv *PlayerInventory, itemID string) error {
+	id := strings.TrimSpace(itemID)
+	if id == "" {
+		return runtime.NewError("itemId is required", 3)
+	}
+	for i := 0; i < len(inv.Pots); i++ {
+		if inv.Pots[i].ItemID != id {
+			continue
+		}
+		if inv.Pots[i].Quantity < 1 {
+			return runtime.NewError("not enough pots in inventory", 3)
+		}
+		inv.Pots[i].Quantity--
+		if inv.Pots[i].Quantity == 0 {
+			inv.Pots = append(inv.Pots[:i], inv.Pots[i+1:]...)
+		}
+		sort.Slice(inv.Pots, func(a, b int) bool { return inv.Pots[a].ItemID < inv.Pots[b].ItemID })
+		return nil
+	}
+	return runtime.NewError("not enough pots in inventory", 3)
+}
