@@ -21,11 +21,12 @@ type PotStack struct {
 
 // PlayerInventory is persisted under player_state / inventory.
 type PlayerInventory struct {
-	Pots []PotStack `json:"pots"`
+	Pots  []PotStack `json:"pots"`
+	Seeds []PotStack `json:"seeds"`
 }
 
 func defaultPlayerInventory() PlayerInventory {
-	return PlayerInventory{Pots: []PotStack{}}
+	return PlayerInventory{Pots: []PotStack{}, Seeds: []PotStack{}}
 }
 
 func initPlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID string) error {
@@ -70,6 +71,9 @@ func readPlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID st
 	}
 	if inv.Pots == nil {
 		inv.Pots = []PotStack{}
+	}
+	if inv.Seeds == nil {
+		inv.Seeds = []PotStack{}
 	}
 	return inv, objs[0].GetVersion(), nil
 }
@@ -139,4 +143,27 @@ func ConsumeOnePot(inv *PlayerInventory, itemID string) error {
 		return nil
 	}
 	return runtime.NewError("not enough pots in inventory", 3)
+}
+
+// ConsumeOneSeed removes one unit of seed itemID from inv.Seeds (mutates inv).
+func ConsumeOneSeed(inv *PlayerInventory, itemID string) error {
+	id := strings.TrimSpace(itemID)
+	if id == "" {
+		return runtime.NewError("seedItemId is required", 3)
+	}
+	for i := 0; i < len(inv.Seeds); i++ {
+		if inv.Seeds[i].ItemID != id {
+			continue
+		}
+		if inv.Seeds[i].Quantity < 1 {
+			return runtime.NewError("not enough seeds in inventory", 3)
+		}
+		inv.Seeds[i].Quantity--
+		if inv.Seeds[i].Quantity == 0 {
+			inv.Seeds = append(inv.Seeds[:i], inv.Seeds[i+1:]...)
+		}
+		sort.Slice(inv.Seeds, func(a, b int) bool { return inv.Seeds[a].ItemID < inv.Seeds[b].ItemID })
+		return nil
+	}
+	return runtime.NewError("not enough seeds in inventory", 3)
 }

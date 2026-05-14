@@ -23,6 +23,16 @@ func TestNormalizePots_mergeAndSort(t *testing.T) {
 	}
 }
 
+func TestConsumeOneSeed(t *testing.T) {
+	inv := PlayerInventory{Seeds: []PotStack{{ItemID: "seed_a", Quantity: 1}}}
+	if err := ConsumeOneSeed(&inv, "seed_a"); err != nil {
+		t.Fatal(err)
+	}
+	if len(inv.Seeds) != 0 {
+		t.Fatalf("got %#v", inv.Seeds)
+	}
+}
+
 func TestConsumeOnePot(t *testing.T) {
 	inv := PlayerInventory{Pots: []PotStack{
 		{ItemID: "pot_wood", Quantity: 2},

@@ -8,7 +8,7 @@ import (
 	"github.com/heroiclabs/nakama-common/runtime"
 )
 
-// GetPlayerInventoryRPC returns current inventory JSON, e.g. {"pots":[...]}.
+// GetPlayerInventoryRPC returns {"pots":[...],"seeds":[...]}.
 func GetPlayerInventoryRPC(
 	ctx context.Context,
 	logger runtime.Logger,
@@ -35,7 +35,8 @@ func GetPlayerInventoryRPC(
 }
 
 type setInventoryPayload struct {
-	Pots []PotStack `json:"pots"`
+	Pots  []PotStack `json:"pots"`
+	Seeds []PotStack `json:"seeds"`
 }
 
 // SetPlayerInventoryRPC replaces pots from payload (same shape as example). Merges duplicate itemId server-side.
@@ -62,8 +63,12 @@ func SetPlayerInventoryRPC(
 	if err != nil {
 		return "", err
 	}
+	seeds, err := normalizePots(body.Seeds)
+	if err != nil {
+		return "", err
+	}
 
-	inv := PlayerInventory{Pots: pots}
+	inv := PlayerInventory{Pots: pots, Seeds: seeds}
 
 	_, version, err := readPlayerInventory(ctx, nk, userID)
 	if err != nil {
