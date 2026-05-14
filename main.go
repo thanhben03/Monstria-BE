@@ -36,13 +36,6 @@ func InitModule(
 		return err
 	}
 
-	if err := initializer.RegisterRpc("get_cloud_progress", GetCloudProgressRPC); err != nil {
-		return err
-	}
-	if err := initializer.RegisterRpc("set_cloud_progress", SetCloudProgressRPC); err != nil {
-		return err
-	}
-
 	err = RegisterAuthHooks(initializer)
 	if err != nil {
 		return err

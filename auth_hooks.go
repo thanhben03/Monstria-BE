@@ -107,11 +107,6 @@ func handleAfterAuthenticate(
 		return err
 	}
 
-	if err := initPlayerCloudProgress(ctx, nk, userID); err != nil {
-		logger.Error("Init player cloud progress failed for user %s: %v", userID, err)
-		return err
-	}
-
-	logger.Info("Initialized default resources, inventory, garden, and cloud progress for user %s", userID)
+	logger.Info("Initialized default resources, inventory, and garden for user %s", userID)
 	return nil
 }
