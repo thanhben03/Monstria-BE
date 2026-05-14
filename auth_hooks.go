@@ -97,6 +97,11 @@ func handleAfterAuthenticate(
 		return err
 	}
 
-	logger.Info("Initialized default resources for user %s", userID)
+	if err := initPlayerInventory(ctx, nk, userID); err != nil {
+		logger.Error("Init player inventory failed for user %s: %v", userID, err)
+		return err
+	}
+
+	logger.Info("Initialized default resources and inventory for user %s", userID)
 	return nil
 }
