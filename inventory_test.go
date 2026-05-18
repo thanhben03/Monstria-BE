@@ -49,6 +49,31 @@ func TestConsumeOnePot(t *testing.T) {
 	}
 }
 
+func TestAddItemMergeAndSort(t *testing.T) {
+	inv := PlayerInventory{Items: []PotStack{{ItemID: "flower_sunflower", Quantity: 1}}}
+	if err := AddItem(&inv, "flower_rose", 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := AddItem(&inv, "flower_rose", 3); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []PotStack{
+		{ItemID: "flower_rose", Quantity: 5},
+		{ItemID: "flower_sunflower", Quantity: 1},
+	}
+	if !reflect.DeepEqual(inv.Items, want) {
+		t.Fatalf("got %#v want %#v", inv.Items, want)
+	}
+}
+
+func TestDefaultInventoryHasItems(t *testing.T) {
+	inv := defaultPlayerInventory()
+	if inv.Items == nil {
+		t.Fatal("expected items slice")
+	}
+}
+
 func TestNormalizePots_dropInvalid(t *testing.T) {
 	got, err := normalizePots([]PotStack{
 		{ItemID: "", Quantity: 1},

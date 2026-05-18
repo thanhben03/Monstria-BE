@@ -176,6 +176,36 @@ func gardenPlantSeed(g *PlayerGarden, slotID, seedItemID string, plantedAtUnix i
 	return nil
 }
 
+func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestReward, error) {
+	sid := strings.TrimSpace(slotID)
+	if sid == "" {
+		return harvestReward{}, runtime.NewError("slotId is required", 3)
+	}
+
+	idx := findPlacementIndex(g, sid)
+	if idx < 0 || strings.TrimSpace(g.Placements[idx].PotItemID) == "" {
+		return harvestReward{}, runtime.NewError("no pot in this slot", 3)
+	}
+	if g.Placements[idx].Plant == nil {
+		return harvestReward{}, runtime.NewError("no plant in this slot", 3)
+	}
+
+	plant := g.Placements[idx].Plant
+	def, err := flowerDefinitionForSeed(plant.SeedItemID)
+	if err != nil {
+		return harvestReward{}, err
+	}
+
+	harvestAt := plant.PlantedAt + def.GrowSeconds
+	if nowUnix < harvestAt {
+		return harvestReward{}, runtime.NewError("plant is not ready", 3)
+	}
+
+	g.Placements[idx].Plant = nil
+	g.Placements = normalizeGardenPlacements(g.Placements)
+	return harvestReward{ItemID: def.RewardItemID, Quantity: def.RewardQuantity}, nil
+}
+
 func nowUnixSeconds() int64 {
 	return time.Now().Unix()
 }

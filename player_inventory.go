@@ -23,10 +23,11 @@ type PotStack struct {
 type PlayerInventory struct {
 	Pots  []PotStack `json:"pots"`
 	Seeds []PotStack `json:"seeds"`
+	Items []PotStack `json:"items"`
 }
 
 func defaultPlayerInventory() PlayerInventory {
-	return PlayerInventory{Pots: []PotStack{}, Seeds: []PotStack{}}
+	return PlayerInventory{Pots: []PotStack{}, Seeds: []PotStack{}, Items: []PotStack{}}
 }
 
 func initPlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID string) error {
@@ -74,6 +75,9 @@ func readPlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID st
 	}
 	if inv.Seeds == nil {
 		inv.Seeds = []PotStack{}
+	}
+	if inv.Items == nil {
+		inv.Items = []PotStack{}
 	}
 	return inv, objs[0].GetVersion(), nil
 }
@@ -166,4 +170,23 @@ func ConsumeOneSeed(inv *PlayerInventory, itemID string) error {
 		return nil
 	}
 	return runtime.NewError("not enough seeds in inventory", 3)
+}
+
+// AddItem adds quantity units of itemID into inv.Items (mutates inv).
+func AddItem(inv *PlayerInventory, itemID string, quantity int) error {
+	id := strings.TrimSpace(itemID)
+	if id == "" {
+		return runtime.NewError("itemId is required", 3)
+	}
+	if quantity < 1 {
+		return runtime.NewError("quantity must be positive", 3)
+	}
+
+	inv.Items = append(inv.Items, PotStack{ItemID: id, Quantity: quantity})
+	items, err := normalizePots(inv.Items)
+	if err != nil {
+		return err
+	}
+	inv.Items = items
+	return nil
 }
