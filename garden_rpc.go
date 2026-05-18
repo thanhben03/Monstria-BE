@@ -288,6 +288,72 @@ func PlantSeedInPotRPC(
 	return string(raw), nil
 }
 
+type waterPlantPayload struct {
+	SlotID string `json:"slotId"`
+}
+
+type waterPlantResponse struct {
+	Garden PlayerGarden `json:"garden"`
+}
+
+// WaterPlantInPotRPC starts plant growth. A planted seed does not grow until watered.
+func WaterPlantInPotRPC(
+	ctx context.Context,
+	logger runtime.Logger,
+	_ *sql.DB,
+	nk runtime.NakamaModule,
+	payload string,
+) (string, error) {
+	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
+	if !ok || userID == "" {
+		return "", runtime.NewError("unauthorized", 16)
+	}
+
+	var body waterPlantPayload
+	if err := json.Unmarshal([]byte(payload), &body); err != nil {
+		return "", runtime.NewError("invalid JSON payload", 3)
+	}
+
+	garden, gardenVer, err := readPlayerGarden(ctx, nk, userID)
+	if err != nil {
+		logger.Error("storage read water plant: %v", err)
+		return "", runtime.NewError("failed to load garden", 13)
+	}
+
+	gardenCopy := garden
+	if err := gardenWaterPlant(&gardenCopy, body.SlotID, nowUnixSeconds()); err != nil {
+		return "", err
+	}
+
+	gardenRaw, err := json.Marshal(gardenCopy)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection:      playerStateCollection,
+			Key:             playerGardenKey,
+			UserID:          userID,
+			Value:           string(gardenRaw),
+			Version:         gardenVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+	})
+	if err != nil {
+		logger.Error("storage write water plant: %v", err)
+		return "", runtime.NewError("failed to save (retry)", 13)
+	}
+
+	out := waterPlantResponse{Garden: gardenCopy}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
 type harvestPlantPayload struct {
 	SlotID string `json:"slotId"`
 }

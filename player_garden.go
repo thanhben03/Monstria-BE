@@ -16,8 +16,10 @@ const (
 
 // PotPlant is optional flower state in a placed pot (after player uses a seed).
 type PotPlant struct {
-	SeedItemID string `json:"seedItemId"`
-	PlantedAt  int64  `json:"plantedAt"` // Unix seconds (server time)
+	SeedItemID      string `json:"seedItemId"`
+	PlantedAt       int64  `json:"plantedAt"` // Unix seconds (server time)
+	WateredAt       int64  `json:"wateredAt,omitempty"`
+	GrowthStartedAt int64  `json:"growthStartedAt,omitempty"`
 }
 
 // SlotPlacement: one occupied slot — pot first, then optional plant from seed.
@@ -176,6 +178,29 @@ func gardenPlantSeed(g *PlayerGarden, slotID, seedItemID string, plantedAtUnix i
 	return nil
 }
 
+func gardenWaterPlant(g *PlayerGarden, slotID string, wateredAtUnix int64) error {
+	sid := strings.TrimSpace(slotID)
+	if sid == "" {
+		return runtime.NewError("slotId is required", 3)
+	}
+
+	idx := findPlacementIndex(g, sid)
+	if idx < 0 || strings.TrimSpace(g.Placements[idx].PotItemID) == "" {
+		return runtime.NewError("no pot in this slot", 3)
+	}
+	if g.Placements[idx].Plant == nil {
+		return runtime.NewError("no plant in this slot", 3)
+	}
+	if g.Placements[idx].Plant.GrowthStartedAt > 0 {
+		return runtime.NewError("plant already watered", 3)
+	}
+
+	g.Placements[idx].Plant.WateredAt = wateredAtUnix
+	g.Placements[idx].Plant.GrowthStartedAt = wateredAtUnix
+	g.Placements = normalizeGardenPlacements(g.Placements)
+	return nil
+}
+
 func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestReward, error) {
 	sid := strings.TrimSpace(slotID)
 	if sid == "" {
@@ -196,7 +221,11 @@ func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestR
 		return harvestReward{}, err
 	}
 
-	harvestAt := plant.PlantedAt + def.GrowSeconds
+	if plant.GrowthStartedAt < 1 {
+		return harvestReward{}, runtime.NewError("plant needs water", 3)
+	}
+
+	harvestAt := plant.GrowthStartedAt + def.GrowSeconds
 	if nowUnix < harvestAt {
 		return harvestReward{}, runtime.NewError("plant is not ready", 3)
 	}

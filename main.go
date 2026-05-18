@@ -38,6 +38,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("plant_seed_in_pot", PlantSeedInPotRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("water_plant_in_pot", WaterPlantInPotRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("get_flower_catalog", GetFlowerCatalogRPC); err != nil {
 		return err
 	}

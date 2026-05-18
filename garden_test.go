@@ -39,8 +39,35 @@ func TestGardenPlacePotThenPlant(t *testing.T) {
 	if idx < 0 || g.Placements[idx].Plant == nil || g.Placements[idx].Plant.SeedItemID != "seed_rose" {
 		t.Fatalf("plant missing %+v", g.Placements)
 	}
+	if g.Placements[idx].Plant.GrowthStartedAt != 0 {
+		t.Fatalf("plant should not grow before watering: %+v", g.Placements[idx].Plant)
+	}
 	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 200); err == nil {
 		t.Fatal("expected already planted error")
+	}
+}
+
+func TestGardenWaterPlant(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenWaterPlant(&g, "0_0", 120); err != nil {
+		t.Fatal(err)
+	}
+
+	idx := findPlacementIndex(&g, "0_0")
+	if idx < 0 || g.Placements[idx].Plant == nil {
+		t.Fatalf("plant missing %+v", g.Placements)
+	}
+	if g.Placements[idx].Plant.WateredAt != 120 || g.Placements[idx].Plant.GrowthStartedAt != 120 {
+		t.Fatalf("plant water state wrong: %+v", g.Placements[idx].Plant)
+	}
+	if err := gardenWaterPlant(&g, "0_0", 130); err == nil {
+		t.Fatal("expected already watered error")
 	}
 }
 
@@ -53,11 +80,17 @@ func TestGardenHarvestPlant(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := gardenHarvestPlant(&g, "0_0", 159); err == nil {
+	if _, err := gardenHarvestPlant(&g, "0_0", 999); err == nil {
+		t.Fatal("expected needs water error")
+	}
+	if err := gardenWaterPlant(&g, "0_0", 120); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := gardenHarvestPlant(&g, "0_0", 179); err == nil {
 		t.Fatal("expected not ready error")
 	}
 
-	reward, err := gardenHarvestPlant(&g, "0_0", 160)
+	reward, err := gardenHarvestPlant(&g, "0_0", 180)
 	if err != nil {
 		t.Fatal(err)
 	}
