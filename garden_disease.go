@@ -11,6 +11,7 @@ const (
 	defaultPlantHealth = 100
 	percentScale       = 10000
 	secondsPerHour     = int64(3600)
+	diseaseTickSeconds = int64(15)
 )
 
 // PlantDisease is backend-owned state. Client should render this, not decide it.
@@ -24,9 +25,9 @@ type DiseaseDefinition struct {
 	Type              string
 	MinGrowthProgress int
 	MaxGrowthProgress int
-	RiskPerHourBps    int
+	RiskPerTickBps    int
 	Severity          int
-	DamagePerHour     int
+	DamagePerTick     int
 }
 
 type TreatmentItemDefinition struct {
@@ -39,17 +40,17 @@ var diseaseDefinitions = []DiseaseDefinition{
 		Type:              "leaf_spot",
 		MinGrowthProgress: 25,
 		MaxGrowthProgress: 85,
-		RiskPerHourBps:    700,
+		RiskPerTickBps:    2500,
 		Severity:          1,
-		DamagePerHour:     4,
+		DamagePerTick:     4,
 	},
 	{
 		Type:              "stem_borer",
 		MinGrowthProgress: 60,
 		MaxGrowthProgress: 100,
-		RiskPerHourBps:    450,
+		RiskPerTickBps:    1800,
 		Severity:          2,
-		DamagePerHour:     8,
+		DamagePerTick:     8,
 	},
 }
 
@@ -125,8 +126,8 @@ func updateGardenDiseaseStateWithRoller(g *PlayerGarden, nowUnix int64, roll dis
 			continue
 		}
 
-		elapsedHours := (nowUnix - last) / secondsPerHour
-		if elapsedHours < 1 {
+		elapsedTicks := (nowUnix - last) / diseaseTickSeconds
+		if elapsedTicks < 1 {
 			continue
 		}
 
@@ -135,10 +136,10 @@ func updateGardenDiseaseStateWithRoller(g *PlayerGarden, nowUnix int64, roll dis
 			continue
 		}
 
-		for h := int64(1); h <= elapsedHours; h++ {
-			at := last + h*secondsPerHour
+		for tick := int64(1); tick <= elapsedTicks; tick++ {
+			at := last + tick*diseaseTickSeconds
 			if plant.Disease != nil {
-				plant.Health -= plant.Disease.Severity * diseaseDamagePerHour(plant.Disease.Type)
+				plant.Health -= plant.Disease.Severity * diseaseDamagePerTick(plant.Disease.Type)
 				if plant.Health < 0 {
 					plant.Health = 0
 				}
@@ -152,7 +153,7 @@ func updateGardenDiseaseStateWithRoller(g *PlayerGarden, nowUnix int64, roll dis
 			}
 		}
 
-		plant.LastCalculatedAt = last + elapsedHours*secondsPerHour
+		plant.LastCalculatedAt = last + elapsedTicks*diseaseTickSeconds
 		changed = true
 	}
 	return changed
@@ -164,10 +165,10 @@ func rollDiseaseForPlant(def FlowerDefinition, at int64, plant *PotPlant, roll d
 		return PlantDisease{}, false
 	}
 	for _, candidate := range candidates {
-		if candidate.RiskPerHourBps < 1 {
+		if candidate.RiskPerTickBps < 1 {
 			continue
 		}
-		if roll(percentScale) < candidate.RiskPerHourBps {
+		if roll(percentScale) < candidate.RiskPerTickBps {
 			return PlantDisease{
 				Type:      candidate.Type,
 				Severity:  candidate.Severity,
@@ -203,11 +204,11 @@ func diseaseCandidatesForProgress(def FlowerDefinition, at int64, growthStartedA
 	return out
 }
 
-func diseaseDamagePerHour(diseaseType string) int {
+func diseaseDamagePerTick(diseaseType string) int {
 	t := strings.TrimSpace(diseaseType)
 	for _, def := range diseaseDefinitions {
-		if def.Type == t && def.DamagePerHour > 0 {
-			return def.DamagePerHour
+		if def.Type == t && def.DamagePerTick > 0 {
+			return def.DamagePerTick
 		}
 	}
 	return 1

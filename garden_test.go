@@ -141,19 +141,19 @@ func TestGardenDiseaseStateCanInfectAndDamagePlant(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	changed := updateGardenDiseaseStateWithRoller(&g, 100+2*secondsPerHour, func(int) int { return 0 })
+	changed := updateGardenDiseaseStateWithRoller(&g, 100+2*diseaseTickSeconds, func(int) int { return 0 })
 	if !changed {
 		t.Fatal("expected disease state to change")
 	}
 
 	plant := g.Placements[0].Plant
-	if plant.Disease == nil || plant.Disease.Type != "stem_borer" {
-		t.Fatalf("expected stem_borer disease, got %+v", plant.Disease)
+	if plant.Disease == nil || plant.Disease.Type != "leaf_spot" {
+		t.Fatalf("expected leaf_spot disease, got %+v", plant.Disease)
 	}
-	if plant.Health != 84 {
-		t.Fatalf("expected disease damage to reduce health to 84, got %+v", plant.Health)
+	if plant.Health != 96 {
+		t.Fatalf("expected disease damage to reduce health to 96, got %+v", plant.Health)
 	}
-	if plant.LastCalculatedAt != 100+2*secondsPerHour {
+	if plant.LastCalculatedAt != 100+2*diseaseTickSeconds {
 		t.Fatalf("unexpected lastCalculatedAt: %+v", plant.LastCalculatedAt)
 	}
 }
@@ -169,9 +169,9 @@ func TestGardenDiseaseProtectionSkipsInfection(t *testing.T) {
 	if err := gardenWaterPlant(&g, "0_0", 100); err != nil {
 		t.Fatal(err)
 	}
-	g.Placements[0].Plant.DiseaseProtectionUntil = 100 + 2*secondsPerHour
+	g.Placements[0].Plant.DiseaseProtectionUntil = 100 + 2*diseaseTickSeconds
 
-	updateGardenDiseaseStateWithRoller(&g, 100+2*secondsPerHour, func(int) int { return 0 })
+	updateGardenDiseaseStateWithRoller(&g, 100+2*diseaseTickSeconds, func(int) int { return 0 })
 	if g.Placements[0].Plant.Disease != nil {
 		t.Fatalf("expected protection to prevent disease, got %+v", g.Placements[0].Plant.Disease)
 	}
@@ -186,9 +186,9 @@ func TestGardenDiseaseStateDoesNotReviveDeadPlant(t *testing.T) {
 		t.Fatal(err)
 	}
 	g.Placements[0].Plant.Health = 0
-	g.Placements[0].Plant.LastCalculatedAt = 100 + secondsPerHour
+	g.Placements[0].Plant.LastCalculatedAt = 100 + diseaseTickSeconds
 
-	updateGardenDiseaseStateWithRoller(&g, 100+2*secondsPerHour, func(int) int { return 0 })
+	updateGardenDiseaseStateWithRoller(&g, 100+2*diseaseTickSeconds, func(int) int { return 0 })
 	if g.Placements[0].Plant.Health != 0 {
 		t.Fatalf("dead plant should stay dead, got %+v", g.Placements[0].Plant.Health)
 	}
