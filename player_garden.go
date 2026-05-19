@@ -16,10 +16,14 @@ const (
 
 // PotPlant is optional flower state in a placed pot (after player uses a seed).
 type PotPlant struct {
-	SeedItemID      string `json:"seedItemId"`
-	PlantedAt       int64  `json:"plantedAt"` // Unix seconds (server time)
-	WateredAt       int64  `json:"wateredAt,omitempty"`
-	GrowthStartedAt int64  `json:"growthStartedAt,omitempty"`
+	SeedItemID             string        `json:"seedItemId"`
+	PlantedAt              int64         `json:"plantedAt"` // Unix seconds (server time)
+	WateredAt              int64         `json:"wateredAt,omitempty"`
+	GrowthStartedAt        int64         `json:"growthStartedAt,omitempty"`
+	LastCalculatedAt       int64         `json:"lastCalculatedAt,omitempty"`
+	Health                 int           `json:"health"`
+	Disease                *PlantDisease `json:"disease,omitempty"`
+	DiseaseProtectionUntil int64         `json:"diseaseProtectionUntil,omitempty"`
 }
 
 // SlotPlacement: one occupied slot — pot first, then optional plant from seed.
@@ -171,8 +175,10 @@ func gardenPlantSeed(g *PlayerGarden, slotID, seedItemID string, plantedAtUnix i
 	}
 
 	g.Placements[idx].Plant = &PotPlant{
-		SeedItemID: sidSeed,
-		PlantedAt:  plantedAtUnix,
+		SeedItemID:       sidSeed,
+		PlantedAt:        plantedAtUnix,
+		LastCalculatedAt: plantedAtUnix,
+		Health:           defaultPlantHealth,
 	}
 	g.Placements = normalizeGardenPlacements(g.Placements)
 	return nil
@@ -216,6 +222,11 @@ func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestR
 	}
 
 	plant := g.Placements[idx].Plant
+	updateGardenDiseaseState(g, nowUnix)
+	plant = g.Placements[idx].Plant
+	if plant.Health < 1 {
+		return harvestReward{}, runtime.NewError("plant is dead", 3)
+	}
 	def, err := flowerDefinitionForSeed(plant.SeedItemID)
 	if err != nil {
 		return harvestReward{}, err

@@ -49,6 +49,22 @@ func TestConsumeOnePot(t *testing.T) {
 	}
 }
 
+func TestConsumeOneItem(t *testing.T) {
+	inv := PlayerInventory{Items: []PotStack{
+		{ItemID: "item_pesticide", Quantity: 2},
+		{ItemID: "flower_rose", Quantity: 1},
+	}}
+	if err := ConsumeOneItem(&inv, "item_pesticide"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ConsumeOneItem(&inv, "item_pesticide"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ConsumeOneItem(&inv, "item_pesticide"); err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 func TestAddItemMergeAndSort(t *testing.T) {
 	inv := PlayerInventory{Items: []PotStack{{ItemID: "flower_sunflower", Quantity: 1}}}
 	if err := AddItem(&inv, "flower_rose", 2); err != nil {

@@ -172,6 +172,29 @@ func ConsumeOneSeed(inv *PlayerInventory, itemID string) error {
 	return runtime.NewError("not enough seeds in inventory", 3)
 }
 
+// ConsumeOneItem removes one unit of itemID from inv.Items (mutates inv).
+func ConsumeOneItem(inv *PlayerInventory, itemID string) error {
+	id := strings.TrimSpace(itemID)
+	if id == "" {
+		return runtime.NewError("itemId is required", 3)
+	}
+	for i := 0; i < len(inv.Items); i++ {
+		if inv.Items[i].ItemID != id {
+			continue
+		}
+		if inv.Items[i].Quantity < 1 {
+			return runtime.NewError("not enough items in inventory", 3)
+		}
+		inv.Items[i].Quantity--
+		if inv.Items[i].Quantity == 0 {
+			inv.Items = append(inv.Items[:i], inv.Items[i+1:]...)
+		}
+		sort.Slice(inv.Items, func(a, b int) bool { return inv.Items[a].ItemID < inv.Items[b].ItemID })
+		return nil
+	}
+	return runtime.NewError("not enough items in inventory", 3)
+}
+
 // AddItem adds quantity units of itemID into inv.Items (mutates inv).
 func AddItem(inv *PlayerInventory, itemID string, quantity int) error {
 	id := strings.TrimSpace(itemID)

@@ -47,6 +47,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("harvest_plant_in_pot", HarvestPlantInPotRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("treat_plant_disease", TreatPlantDiseaseRPC); err != nil {
+		return err
+	}
 
 	if err := initializer.RegisterRpc("get_player_cloud_layers", GetPlayerCloudLayersRPC); err != nil {
 		return err

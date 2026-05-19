@@ -42,6 +42,9 @@ func TestGardenPlacePotThenPlant(t *testing.T) {
 	if g.Placements[idx].Plant.GrowthStartedAt != 0 {
 		t.Fatalf("plant should not grow before watering: %+v", g.Placements[idx].Plant)
 	}
+	if g.Placements[idx].Plant.Health != defaultPlantHealth {
+		t.Fatalf("plant should start healthy: %+v", g.Placements[idx].Plant)
+	}
 	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 200); err == nil {
 		t.Fatal("expected already planted error")
 	}
@@ -123,5 +126,95 @@ func TestGardenHarvestRequiresPlant(t *testing.T) {
 	}
 	if _, err := gardenHarvestPlant(&g, "0_1", 100); err == nil {
 		t.Fatal("expected no pot error")
+	}
+}
+
+func TestGardenDiseaseStateCanInfectAndDamagePlant(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenWaterPlant(&g, "0_0", 100); err != nil {
+		t.Fatal(err)
+	}
+
+	changed := updateGardenDiseaseStateWithRoller(&g, 100+2*secondsPerHour, func(int) int { return 0 })
+	if !changed {
+		t.Fatal("expected disease state to change")
+	}
+
+	plant := g.Placements[0].Plant
+	if plant.Disease == nil || plant.Disease.Type != "stem_borer" {
+		t.Fatalf("expected stem_borer disease, got %+v", plant.Disease)
+	}
+	if plant.Health != 84 {
+		t.Fatalf("expected disease damage to reduce health to 84, got %+v", plant.Health)
+	}
+	if plant.LastCalculatedAt != 100+2*secondsPerHour {
+		t.Fatalf("unexpected lastCalculatedAt: %+v", plant.LastCalculatedAt)
+	}
+}
+
+func TestGardenDiseaseProtectionSkipsInfection(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenWaterPlant(&g, "0_0", 100); err != nil {
+		t.Fatal(err)
+	}
+	g.Placements[0].Plant.DiseaseProtectionUntil = 100 + 2*secondsPerHour
+
+	updateGardenDiseaseStateWithRoller(&g, 100+2*secondsPerHour, func(int) int { return 0 })
+	if g.Placements[0].Plant.Disease != nil {
+		t.Fatalf("expected protection to prevent disease, got %+v", g.Placements[0].Plant.Disease)
+	}
+}
+
+func TestGardenDiseaseStateDoesNotReviveDeadPlant(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+	g.Placements[0].Plant.Health = 0
+	g.Placements[0].Plant.LastCalculatedAt = 100 + secondsPerHour
+
+	updateGardenDiseaseStateWithRoller(&g, 100+2*secondsPerHour, func(int) int { return 0 })
+	if g.Placements[0].Plant.Health != 0 {
+		t.Fatalf("dead plant should stay dead, got %+v", g.Placements[0].Plant.Health)
+	}
+}
+
+func TestGardenTreatPlantDisease(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+	g.Placements[0].Plant.Disease = &PlantDisease{Type: "leaf_spot", Severity: 1, StartedAt: 200}
+
+	if err := gardenTreatPlantDisease(&g, "0_0", "item_pesticide", 300); err != nil {
+		t.Fatal(err)
+	}
+	plant := g.Placements[0].Plant
+	if plant.Disease != nil {
+		t.Fatalf("expected disease cleared, got %+v", plant.Disease)
+	}
+	if plant.DiseaseProtectionUntil != 300+12*secondsPerHour {
+		t.Fatalf("unexpected protection time: %+v", plant.DiseaseProtectionUntil)
+	}
+	if err := gardenTreatPlantDisease(&g, "0_0", "flower_rose", 300); err == nil {
+		t.Fatal("expected invalid treatment item error")
 	}
 }
