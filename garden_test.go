@@ -147,8 +147,11 @@ func TestGardenDiseaseStateCanInfectAndDamagePlant(t *testing.T) {
 	}
 
 	plant := g.Placements[0].Plant
-	if plant.Disease == nil || plant.Disease.Type != "leaf_spot" {
-		t.Fatalf("expected leaf_spot disease, got %+v", plant.Disease)
+	if plant.Disease == nil || plant.Disease.Type != "borua" {
+		t.Fatalf("expected borua disease, got %+v", plant.Disease)
+	}
+	if !plant.DiseaseOccurred {
+		t.Fatalf("expected disease occurrence to be recorded")
 	}
 	if plant.Health != 96 {
 		t.Fatalf("expected disease damage to reduce health to 96, got %+v", plant.Health)
@@ -202,7 +205,8 @@ func TestGardenTreatPlantDisease(t *testing.T) {
 	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
 		t.Fatal(err)
 	}
-	g.Placements[0].Plant.Disease = &PlantDisease{Type: "leaf_spot", Severity: 1, StartedAt: 200}
+	g.Placements[0].Plant.Disease = &PlantDisease{Type: "borua", Severity: 1, StartedAt: 200}
+	g.Placements[0].Plant.DiseaseOccurred = true
 
 	if err := gardenTreatPlantDisease(&g, "0_0", "item_pesticide", 300); err != nil {
 		t.Fatal(err)
@@ -216,5 +220,36 @@ func TestGardenTreatPlantDisease(t *testing.T) {
 	}
 	if err := gardenTreatPlantDisease(&g, "0_0", "flower_rose", 300); err == nil {
 		t.Fatal("expected invalid treatment item error")
+	}
+}
+
+func TestGardenDiseaseOnlyOccursOncePerPlant(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenWaterPlant(&g, "0_0", 100); err != nil {
+		t.Fatal(err)
+	}
+
+	updateGardenDiseaseStateWithRoller(&g, 100+diseaseTickSeconds, func(int) int { return 0 })
+	if g.Placements[0].Plant.Disease == nil {
+		t.Fatal("expected first disease")
+	}
+	if err := gardenTreatPlantDisease(&g, "0_0", "item_pesticide", 130); err != nil {
+		t.Fatal(err)
+	}
+
+	plant := g.Placements[0].Plant
+	plant.DiseaseProtectionUntil = 0
+	updateGardenDiseaseStateWithRoller(&g, 100+4*diseaseTickSeconds, func(int) int { return 0 })
+	if plant.Disease != nil {
+		t.Fatalf("expected disease not to reoccur, got %+v", plant.Disease)
+	}
+	if !plant.DiseaseOccurred {
+		t.Fatal("expected disease occurrence to remain recorded")
 	}
 }

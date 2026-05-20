@@ -37,7 +37,7 @@ type TreatmentItemDefinition struct {
 
 var diseaseDefinitions = []DiseaseDefinition{
 	{
-		Type:              "leaf_spot",
+		Type:              "borua",
 		MinGrowthProgress: 25,
 		MaxGrowthProgress: 85,
 		RiskPerTickBps:    2500,
@@ -45,7 +45,7 @@ var diseaseDefinitions = []DiseaseDefinition{
 		DamagePerTick:     4,
 	},
 	{
-		Type:              "stem_borer",
+		Type:              "bocanhcung",
 		MinGrowthProgress: 60,
 		MaxGrowthProgress: 100,
 		RiskPerTickBps:    1800,
@@ -91,6 +91,10 @@ func normalizePlantRuntimeState(plant *PotPlant, nowUnix int64) bool {
 	}
 	if plant.DiseaseProtectionUntil < nowUnix && plant.DiseaseProtectionUntil != 0 {
 		plant.DiseaseProtectionUntil = 0
+		changed = true
+	}
+	if plant.Disease != nil && !plant.DiseaseOccurred {
+		plant.DiseaseOccurred = true
 		changed = true
 	}
 	return changed
@@ -148,8 +152,12 @@ func updateGardenDiseaseStateWithRoller(g *PlayerGarden, nowUnix int64, roll dis
 			if plant.DiseaseProtectionUntil >= at {
 				continue
 			}
+			if plant.DiseaseOccurred {
+				continue
+			}
 			if disease, ok := rollDiseaseForPlant(def, at, plant, roll); ok {
 				plant.Disease = &disease
+				plant.DiseaseOccurred = true
 			}
 		}
 
@@ -164,19 +172,22 @@ func rollDiseaseForPlant(def FlowerDefinition, at int64, plant *PotPlant, roll d
 	if len(candidates) == 0 {
 		return PlantDisease{}, false
 	}
+	riskPerTickBps := 0
 	for _, candidate := range candidates {
-		if candidate.RiskPerTickBps < 1 {
-			continue
-		}
-		if roll(percentScale) < candidate.RiskPerTickBps {
-			return PlantDisease{
-				Type:      candidate.Type,
-				Severity:  candidate.Severity,
-				StartedAt: at,
-			}, true
+		if candidate.RiskPerTickBps > riskPerTickBps {
+			riskPerTickBps = candidate.RiskPerTickBps
 		}
 	}
-	return PlantDisease{}, false
+	if riskPerTickBps < 1 || roll(percentScale) >= riskPerTickBps {
+		return PlantDisease{}, false
+	}
+
+	candidate := candidates[roll(len(candidates))]
+	return PlantDisease{
+		Type:      candidate.Type,
+		Severity:  candidate.Severity,
+		StartedAt: at,
+	}, true
 }
 
 func diseaseCandidatesForProgress(def FlowerDefinition, at int64, growthStartedAt int64) []DiseaseDefinition {
@@ -191,9 +202,23 @@ func diseaseCandidatesForProgress(def FlowerDefinition, at int64, growthStartedA
 		progress = 100
 	}
 
+	allowed := make(map[string]struct{}, len(def.Disease))
+	for _, diseaseType := range def.Disease {
+		diseaseType = strings.TrimSpace(diseaseType)
+		if diseaseType != "" {
+			allowed[diseaseType] = struct{}{}
+		}
+	}
+	if len(allowed) == 0 {
+		return nil
+	}
+
 	out := make([]DiseaseDefinition, 0, len(diseaseDefinitions))
 	for _, def := range diseaseDefinitions {
 		if def.Type == "" || def.Severity < 1 {
+			continue
+		}
+		if _, ok := allowed[def.Type]; !ok {
 			continue
 		}
 		if progress < def.MinGrowthProgress || progress > def.MaxGrowthProgress {

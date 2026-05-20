@@ -15,11 +15,12 @@ import (
 // FlowerDefinition is backend-owned gameplay data for a seed/flower.
 // Unity may mirror this by ID for visuals, but harvest validation uses this table.
 type FlowerDefinition struct {
-	SeedItemID     string `json:"seedItemId"`
-	FlowerItemID   string `json:"flowerItemId"`
-	GrowSeconds    int64  `json:"growSeconds"`
-	RewardItemID   string `json:"rewardItemId"`
-	RewardQuantity int    `json:"rewardQuantity"`
+	SeedItemID     string   `json:"seedItemId"`
+	FlowerItemID   string   `json:"flowerItemId"`
+	GrowSeconds    int64    `json:"growSeconds"`
+	RewardItemID   string   `json:"rewardItemId"`
+	RewardQuantity int      `json:"rewardQuantity"`
+	Disease        []string `json:"disease,omitempty"`
 }
 
 const flowerCatalogFileName = "flower_catalog.json"
@@ -98,6 +99,7 @@ func validateFlowerDefinitions(defs []FlowerDefinition) ([]FlowerDefinition, err
 		def.SeedItemID = strings.TrimSpace(def.SeedItemID)
 		def.FlowerItemID = strings.TrimSpace(def.FlowerItemID)
 		def.RewardItemID = strings.TrimSpace(def.RewardItemID)
+		def.Disease = normalizeDiseaseTypes(def.Disease)
 
 		if def.SeedItemID == "" {
 			return nil, fmt.Errorf("flowers[%d].seedItemId is required", i)
@@ -122,6 +124,23 @@ func validateFlowerDefinitions(defs []FlowerDefinition) ([]FlowerDefinition, err
 		out = append(out, def)
 	}
 	return out, nil
+}
+
+func normalizeDiseaseTypes(in []string) []string {
+	seen := make(map[string]struct{}, len(in))
+	out := make([]string, 0, len(in))
+	for _, diseaseType := range in {
+		diseaseType = strings.TrimSpace(diseaseType)
+		if diseaseType == "" {
+			continue
+		}
+		if _, ok := seen[diseaseType]; ok {
+			continue
+		}
+		seen[diseaseType] = struct{}{}
+		out = append(out, diseaseType)
+	}
+	return out
 }
 
 func setFlowerDefinitions(defs []FlowerDefinition) {

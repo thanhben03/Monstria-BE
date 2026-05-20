@@ -5,14 +5,16 @@
       "flowerItemId": "flower_rose",
       "growSeconds": 60,
       "rewardItemId": "flower_rose",
-      "rewardQuantity": 1
+      "rewardQuantity": 1,
+      "disease": ["borua"]
     },
     {
       "seedItemId": "seed_sunflower",
       "flowerItemId": "flower_sunflower",
       "growSeconds": 120,
       "rewardItemId": "flower_sunflower",
-      "rewardQuantity": 1
+      "rewardQuantity": 1,
+      "disease": ["bocanhcung"]
     }
   ]
 }

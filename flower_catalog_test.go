@@ -28,6 +28,9 @@ func TestFlowerDefinitionForSeed(t *testing.T) {
 	if def.RewardItemID != "flower_rose" || def.RewardQuantity != 1 || def.GrowSeconds != 60 {
 		t.Fatalf("got %#v", def)
 	}
+	if len(def.Disease) != 2 || def.Disease[0] != "borua" || def.Disease[1] != "bocanhcung" {
+		t.Fatalf("got disease config %#v", def.Disease)
+	}
 
 	if _, err := flowerDefinitionForSeed("seed_unknown"); err == nil {
 		t.Fatal("expected unknown seed error")

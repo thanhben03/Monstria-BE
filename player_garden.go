@@ -23,6 +23,7 @@ type PotPlant struct {
 	LastCalculatedAt       int64         `json:"lastCalculatedAt,omitempty"`
 	Health                 int           `json:"health"`
 	Disease                *PlantDisease `json:"disease,omitempty"`
+	DiseaseOccurred        bool          `json:"diseaseOccurred,omitempty"`
 	DiseaseProtectionUntil int64         `json:"diseaseProtectionUntil,omitempty"`
 }
 
