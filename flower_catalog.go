@@ -1,6 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -17,24 +22,112 @@ type FlowerDefinition struct {
 	RewardQuantity int    `json:"rewardQuantity"`
 }
 
-var flowerDefinitions = []FlowerDefinition{
-	{
-		SeedItemID:     "seed_rose",
-		FlowerItemID:   "flower_rose",
-		GrowSeconds:    60,
-		RewardItemID:   "flower_rose",
-		RewardQuantity: 1,
-	},
-	{
-		SeedItemID:     "seed_sunflower",
-		FlowerItemID:   "flower_sunflower",
-		GrowSeconds:    120,
-		RewardItemID:   "flower_sunflower",
-		RewardQuantity: 1,
-	},
+const flowerCatalogFileName = "flower_catalog.json"
+
+type flowerCatalogConfig struct {
+	Flowers []FlowerDefinition `json:"flowers"`
 }
 
+var flowerDefinitions []FlowerDefinition
 var flowerDefinitionBySeed = buildFlowerDefinitionBySeed(flowerDefinitions)
+
+func init() {
+	_ = loadFlowerDefinitions()
+}
+
+func loadFlowerDefinitions() error {
+	path, err := resolveFlowerCatalogPath()
+	if err != nil {
+		return err
+	}
+	return loadFlowerDefinitionsFromFile(path)
+}
+
+func resolveFlowerCatalogPath() (string, error) {
+	if path := strings.TrimSpace(os.Getenv("FLOWER_CATALOG_PATH")); path != "" {
+		return path, nil
+	}
+
+	candidates := []string{
+		flowerCatalogFileName,
+		filepath.Join("modules", flowerCatalogFileName),
+		filepath.Join("/nakama/data/modules", flowerCatalogFileName),
+		filepath.Join("/nakama/data", flowerCatalogFileName),
+	}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("%s not found", flowerCatalogFileName)
+}
+
+func loadFlowerDefinitionsFromFile(path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read flower catalog %q: %w", path, err)
+	}
+	defs, err := parseFlowerDefinitions(raw)
+	if err != nil {
+		return fmt.Errorf("parse flower catalog %q: %w", path, err)
+	}
+	setFlowerDefinitions(defs)
+	return nil
+}
+
+func parseFlowerDefinitions(raw []byte) ([]FlowerDefinition, error) {
+	var config flowerCatalogConfig
+	if err := json.Unmarshal(raw, &config); err != nil {
+		var defs []FlowerDefinition
+		if arrayErr := json.Unmarshal(raw, &defs); arrayErr != nil {
+			return nil, err
+		}
+		config.Flowers = defs
+	}
+	return validateFlowerDefinitions(config.Flowers)
+}
+
+func validateFlowerDefinitions(defs []FlowerDefinition) ([]FlowerDefinition, error) {
+	if len(defs) == 0 {
+		return nil, errors.New("flowers must contain at least one definition")
+	}
+
+	out := make([]FlowerDefinition, 0, len(defs))
+	seenSeeds := make(map[string]struct{}, len(defs))
+	for i, def := range defs {
+		def.SeedItemID = strings.TrimSpace(def.SeedItemID)
+		def.FlowerItemID = strings.TrimSpace(def.FlowerItemID)
+		def.RewardItemID = strings.TrimSpace(def.RewardItemID)
+
+		if def.SeedItemID == "" {
+			return nil, fmt.Errorf("flowers[%d].seedItemId is required", i)
+		}
+		if def.FlowerItemID == "" {
+			return nil, fmt.Errorf("flowers[%d].flowerItemId is required", i)
+		}
+		if def.GrowSeconds < 1 {
+			return nil, fmt.Errorf("flowers[%d].growSeconds must be greater than 0", i)
+		}
+		if def.RewardItemID == "" {
+			return nil, fmt.Errorf("flowers[%d].rewardItemId is required", i)
+		}
+		if def.RewardQuantity < 1 {
+			return nil, fmt.Errorf("flowers[%d].rewardQuantity must be greater than 0", i)
+		}
+		if _, ok := seenSeeds[def.SeedItemID]; ok {
+			return nil, fmt.Errorf("duplicate seedItemId %q", def.SeedItemID)
+		}
+
+		seenSeeds[def.SeedItemID] = struct{}{}
+		out = append(out, def)
+	}
+	return out, nil
+}
+
+func setFlowerDefinitions(defs []FlowerDefinition) {
+	flowerDefinitions = append([]FlowerDefinition(nil), defs...)
+	flowerDefinitionBySeed = buildFlowerDefinitionBySeed(flowerDefinitions)
+}
 
 func buildFlowerDefinitionBySeed(defs []FlowerDefinition) map[string]FlowerDefinition {
 	out := make(map[string]FlowerDefinition, len(defs))

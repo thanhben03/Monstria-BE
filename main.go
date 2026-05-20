@@ -17,6 +17,10 @@ func InitModule(
 
 	logger.Info("Module loaded!")
 
+	if err := loadFlowerDefinitions(); err != nil {
+		return err
+	}
+
 	err := initializer.RegisterRpc("ping", PingRPC)
 	if err != nil {
 		return err
