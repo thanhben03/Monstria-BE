@@ -20,6 +20,9 @@ func InitModule(
 	if err := loadFlowerDefinitions(); err != nil {
 		return err
 	}
+	if err := loadShopItemDefinitions(); err != nil {
+		return err
+	}
 
 	err := initializer.RegisterRpc("ping", PingRPC)
 	if err != nil {
@@ -46,6 +49,12 @@ func InitModule(
 		return err
 	}
 	if err := initializer.RegisterRpc("get_flower_catalog", GetFlowerCatalogRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("get_shop_catalog", GetShopCatalogRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("purchase_shop_item", PurchaseShopItemRPC); err != nil {
 		return err
 	}
 	if err := initializer.RegisterRpc("harvest_plant_in_pot", HarvestPlantInPotRPC); err != nil {

@@ -1,0 +1,217 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"strings"
+
+	"github.com/heroiclabs/nakama-common/runtime"
+)
+
+type purchaseShopItemPayload struct {
+	ShopItemID string `json:"shopItemId"`
+	Currency   string `json:"currency"`
+}
+
+type shopPurchaseResult struct {
+	ShopItemID  string `json:"shopItemId"`
+	GrantType   string `json:"grantType"`
+	GrantItemID string `json:"grantItemId"`
+	Quantity    int    `json:"quantity"`
+	Currency    string `json:"currency"`
+	Price       int    `json:"price"`
+}
+
+type purchaseShopItemResponse struct {
+	Resources PlayerResources    `json:"resources"`
+	Inventory PlayerInventory    `json:"inventory"`
+	Purchase  shopPurchaseResult `json:"purchase"`
+}
+
+func GetShopCatalogRPC(
+	ctx context.Context,
+	logger runtime.Logger,
+	_ *sql.DB,
+	_ runtime.NakamaModule,
+	_ string,
+) (string, error) {
+	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
+	if !ok || userID == "" {
+		return "", runtime.NewError("unauthorized", 16)
+	}
+
+	raw, err := json.Marshal(shopCatalogResponse{Items: listShopItemDefinitionsByCategory()})
+	if err != nil {
+		logger.Error("marshal shop catalog: %v", err)
+		return "", runtime.NewError("failed to load shop catalog", 13)
+	}
+	return string(raw), nil
+}
+
+func PurchaseShopItemRPC(
+	ctx context.Context,
+	logger runtime.Logger,
+	_ *sql.DB,
+	nk runtime.NakamaModule,
+	payload string,
+) (string, error) {
+	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
+	if !ok || userID == "" {
+		return "", runtime.NewError("unauthorized", 16)
+	}
+
+	var body purchaseShopItemPayload
+	if err := json.Unmarshal([]byte(payload), &body); err != nil {
+		return "", runtime.NewError("invalid JSON payload", 3)
+	}
+
+	def, err := shopItemDefinitionForID(body.ShopItemID)
+	if err != nil {
+		return "", err
+	}
+
+	currency, err := resolvePurchaseCurrency(def, body.Currency)
+	if err != nil {
+		return "", err
+	}
+
+	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
+		{Collection: playerStateCollection, Key: playerStateKey, UserID: userID},
+		{Collection: playerStateCollection, Key: playerInventoryKey, UserID: userID},
+	})
+	if err != nil {
+		logger.Error("storage read purchase shop item: %v", err)
+		return "", runtime.NewError("failed to load state", 13)
+	}
+
+	resources := defaultPlayerResources()
+	resourcesVer := ""
+	inv := defaultPlayerInventory()
+	invVer := ""
+
+	for _, o := range objs {
+		switch o.GetKey() {
+		case playerStateKey:
+			if err := json.Unmarshal([]byte(o.GetValue()), &resources); err != nil {
+				return "", runtime.NewError("corrupt resources", 13)
+			}
+			resources = normalizePlayerResources(resources)
+			resourcesVer = o.GetVersion()
+		case playerInventoryKey:
+			if err := json.Unmarshal([]byte(o.GetValue()), &inv); err != nil {
+				return "", runtime.NewError("corrupt inventory", 13)
+			}
+			if inv.Pots == nil {
+				inv.Pots = []PotStack{}
+			}
+			if inv.Seeds == nil {
+				inv.Seeds = []PotStack{}
+			}
+			if inv.Items == nil {
+				inv.Items = []PotStack{}
+			}
+			invVer = o.GetVersion()
+		}
+	}
+
+	if requiredLevel := normalizedRequiredLevel(def.RequiredLevel); resources.Level < requiredLevel {
+		return "", runtime.NewError("player level is too low", 9)
+	}
+
+	resourcesCopy := resources
+	if err := SpendPlayerCurrency(&resourcesCopy, currency, def.Price); err != nil {
+		return "", err
+	}
+
+	invCopy := inv
+	if err := grantShopItem(&invCopy, def); err != nil {
+		return "", err
+	}
+
+	resourcesRaw, err := json.Marshal(resourcesCopy)
+	if err != nil {
+		return "", err
+	}
+	invRaw, err := json.Marshal(invCopy)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection:      playerStateCollection,
+			Key:             playerStateKey,
+			UserID:          userID,
+			Value:           string(resourcesRaw),
+			Version:         resourcesVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+		{
+			Collection:      playerStateCollection,
+			Key:             playerInventoryKey,
+			UserID:          userID,
+			Value:           string(invRaw),
+			Version:         invVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+	})
+	if err != nil {
+		logger.Error("storage write purchase shop item: %v", err)
+		return "", runtime.NewError("failed to save purchase (retry)", 13)
+	}
+
+	out := purchaseShopItemResponse{
+		Resources: resourcesCopy,
+		Inventory: invCopy,
+		Purchase: shopPurchaseResult{
+			ShopItemID:  def.ShopItemID,
+			GrantType:   def.GrantType,
+			GrantItemID: def.GrantItemID,
+			Quantity:    def.Quantity,
+			Currency:    currency,
+			Price:       def.Price,
+		},
+	}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
+func resolvePurchaseCurrency(def ShopItemDefinition, requested string) (string, error) {
+	currency := strings.TrimSpace(strings.ToLower(requested))
+	if currency == "" {
+		if len(def.Currency) == 1 {
+			return def.Currency[0], nil
+		}
+		return "", runtime.NewError("currency is required", 3)
+	}
+	if !shopItemAllowsCurrency(def, currency) {
+		return "", runtime.NewError("currency is not allowed for this shop item", 3)
+	}
+	return currency, nil
+}
+
+func normalizedRequiredLevel(requiredLevel int) int {
+	if requiredLevel < 1 {
+		return 1
+	}
+	return requiredLevel
+}
+
+func grantShopItem(inv *PlayerInventory, def ShopItemDefinition) error {
+	switch def.GrantType {
+	case shopGrantTypePot:
+		return AddPot(inv, def.GrantItemID, def.Quantity)
+	case shopGrantTypeSeed:
+		return AddSeed(inv, def.GrantItemID, def.Quantity)
+	case shopGrantTypeItem:
+		return AddItem(inv, def.GrantItemID, def.Quantity)
+	default:
+		return runtime.NewError("grantType is invalid", 13)
+	}
+}

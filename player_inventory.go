@@ -213,3 +213,41 @@ func AddItem(inv *PlayerInventory, itemID string, quantity int) error {
 	inv.Items = items
 	return nil
 }
+
+// AddPot adds quantity units of itemID into inv.Pots (mutates inv).
+func AddPot(inv *PlayerInventory, itemID string, quantity int) error {
+	id := strings.TrimSpace(itemID)
+	if id == "" {
+		return runtime.NewError("itemId is required", 3)
+	}
+	if quantity < 1 {
+		return runtime.NewError("quantity must be positive", 3)
+	}
+
+	inv.Pots = append(inv.Pots, PotStack{ItemID: id, Quantity: quantity})
+	pots, err := normalizePots(inv.Pots)
+	if err != nil {
+		return err
+	}
+	inv.Pots = pots
+	return nil
+}
+
+// AddSeed adds quantity units of itemID into inv.Seeds (mutates inv).
+func AddSeed(inv *PlayerInventory, itemID string, quantity int) error {
+	id := strings.TrimSpace(itemID)
+	if id == "" {
+		return runtime.NewError("itemId is required", 3)
+	}
+	if quantity < 1 {
+		return runtime.NewError("quantity must be positive", 3)
+	}
+
+	inv.Seeds = append(inv.Seeds, PotStack{ItemID: id, Quantity: quantity})
+	seeds, err := normalizePots(inv.Seeds)
+	if err != nil {
+		return err
+	}
+	inv.Seeds = seeds
+	return nil
+}
