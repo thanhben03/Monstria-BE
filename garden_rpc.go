@@ -382,6 +382,14 @@ type harvestPlantResponse struct {
 	Reward    harvestReward   `json:"reward"`
 }
 
+type destroyDeadPlantPayload struct {
+	SlotID string `json:"slotId"`
+}
+
+type destroyDeadPlantResponse struct {
+	Garden PlayerGarden `json:"garden"`
+}
+
 type treatPlantDiseasePayload struct {
 	SlotID string `json:"slotId"`
 	ItemID string `json:"itemId"`
@@ -620,6 +628,64 @@ func HarvestPlantInPotRPC(
 	}
 
 	out := harvestPlantResponse{Inventory: invCopy, Garden: gardenCopy, Reward: reward}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
+// DestroyDeadPlantRPC clears a dead plant from a pot without granting rewards.
+func DestroyDeadPlantRPC(
+	ctx context.Context,
+	logger runtime.Logger,
+	_ *sql.DB,
+	nk runtime.NakamaModule,
+	payload string,
+) (string, error) {
+	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
+	if !ok || userID == "" {
+		return "", runtime.NewError("unauthorized", 16)
+	}
+
+	var body destroyDeadPlantPayload
+	if err := json.Unmarshal([]byte(payload), &body); err != nil {
+		return "", runtime.NewError("invalid JSON payload", 3)
+	}
+
+	garden, gardenVer, err := readPlayerGarden(ctx, nk, userID)
+	if err != nil {
+		logger.Error("storage read destroy dead plant: %v", err)
+		return "", runtime.NewError("failed to load garden", 13)
+	}
+
+	gardenCopy := garden
+	if err := gardenDestroyDeadPlant(&gardenCopy, body.SlotID, nowUnixSeconds()); err != nil {
+		return "", err
+	}
+
+	gardenRaw, err := json.Marshal(gardenCopy)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection:      playerStateCollection,
+			Key:             playerGardenKey,
+			UserID:          userID,
+			Value:           string(gardenRaw),
+			Version:         gardenVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+	})
+	if err != nil {
+		logger.Error("storage write destroy dead plant: %v", err)
+		return "", runtime.NewError("failed to save (retry)", 13)
+	}
+
+	out := destroyDeadPlantResponse{Garden: gardenCopy}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err

@@ -129,6 +129,33 @@ func TestGardenHarvestRequiresPlant(t *testing.T) {
 	}
 }
 
+func TestGardenDestroyDeadPlant(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := gardenDestroyDeadPlant(&g, "0_0", 120); err == nil {
+		t.Fatal("expected alive plant error")
+	}
+
+	g.Placements[0].Plant.Health = 0
+	if err := gardenDestroyDeadPlant(&g, "0_0", 120); err != nil {
+		t.Fatal(err)
+	}
+
+	idx := findPlacementIndex(&g, "0_0")
+	if idx < 0 || g.Placements[idx].PotItemID != "pot_wood" {
+		t.Fatal("expected pot to remain after destroying dead plant")
+	}
+	if g.Placements[idx].Plant != nil {
+		t.Fatalf("expected plant cleared, got %+v", g.Placements[idx].Plant)
+	}
+}
+
 func TestGardenDiseaseStateCanInfectAndDamagePlant(t *testing.T) {
 	g := defaultPlayerGarden()
 	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {

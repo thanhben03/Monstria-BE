@@ -51,6 +51,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("harvest_plant_in_pot", HarvestPlantInPotRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("destroy_dead_plant", DestroyDeadPlantRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("treat_plant_disease", TreatPlantDiseaseRPC); err != nil {
 		return err
 	}

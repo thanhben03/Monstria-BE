@@ -247,6 +247,34 @@ func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestR
 	return harvestReward{ItemID: def.RewardItemID, Quantity: def.RewardQuantity}, nil
 }
 
+func gardenDestroyDeadPlant(g *PlayerGarden, slotID string, nowUnix int64) error {
+	sid := strings.TrimSpace(slotID)
+	if sid == "" {
+		return runtime.NewError("slotId is required", 3)
+	}
+
+	idx := findPlacementIndex(g, sid)
+	if idx < 0 || strings.TrimSpace(g.Placements[idx].PotItemID) == "" {
+		return runtime.NewError("no pot in this slot", 3)
+	}
+	if g.Placements[idx].Plant == nil {
+		return runtime.NewError("no plant in this slot", 3)
+	}
+
+	updateGardenDiseaseState(g, nowUnix)
+	idx = findPlacementIndex(g, sid)
+	if idx < 0 || g.Placements[idx].Plant == nil {
+		return runtime.NewError("no plant in this slot", 3)
+	}
+	if g.Placements[idx].Plant.Health > 0 {
+		return runtime.NewError("plant is not dead", 3)
+	}
+
+	g.Placements[idx].Plant = nil
+	g.Placements = normalizeGardenPlacements(g.Placements)
+	return nil
+}
+
 func nowUnixSeconds() int64 {
 	return time.Now().Unix()
 }
