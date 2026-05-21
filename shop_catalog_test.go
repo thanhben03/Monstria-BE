@@ -11,8 +11,8 @@ func TestParseShopItemDefinitions(t *testing.T) {
 					"grantType": "seed",
 					"grantItemId": "seed_rose",
 					"quantity": 5,
-					"currency": ["gem", "coin", "coin"],
-					"price": 100,
+					"coinPrice": 100,
+					"gemPrice": 2,
 					"requiredLevel": 2
 				}
 			]
@@ -30,8 +30,8 @@ func TestParseShopItemDefinitions(t *testing.T) {
 	if def.GrantType != shopGrantTypeSeed || def.Quantity != 5 || def.RequiredLevel != 2 {
 		t.Fatalf("unexpected def %#v", def)
 	}
-	if len(def.Currency) != 2 || def.Currency[0] != shopCurrencyCoin || def.Currency[1] != shopCurrencyGem {
-		t.Fatalf("unexpected currencies %#v", def.Currency)
+	if def.CoinPrice != 100 || def.GemPrice != 2 {
+		t.Fatalf("unexpected prices %#v", def)
 	}
 }
 
@@ -45,7 +45,6 @@ func TestShopItemDefinitionForIDReturnsMetadata(t *testing.T) {
 			GrantType:       shopGrantTypeItem,
 			GrantItemID:     "flower_rose",
 			Quantity:        1,
-			Currency:        []string{shopCurrencyCoin, shopCurrencyGem},
 			CoinPrice:       500,
 			GemPrice:        5,
 			GrowthTime:      "14:00:00",
@@ -83,8 +82,7 @@ func TestShopItemDefinitionForIDRejectsDisabledItem(t *testing.T) {
 			GrantType:   shopGrantTypePot,
 			GrantItemID: "pot_01",
 			Quantity:    1,
-			Currency:    []string{shopCurrencyCoin},
-			Price:       1,
+			CoinPrice:   1,
 			Disabled:    true,
 		},
 	})
@@ -102,8 +100,7 @@ func TestParseShopItemDefinitionsSupportsLegacyArray(t *testing.T) {
 				"grantType": "pot",
 				"grantItemId": "pot_wood",
 				"quantity": 1,
-				"currency": ["coin"],
-				"price": 100
+				"coinPrice": 100
 			}
 		]
 	}`)
@@ -118,7 +115,7 @@ func TestParseShopItemDefinitionsSupportsLegacyArray(t *testing.T) {
 }
 
 func TestParseShopItemDefinitionsRejectsInvalid(t *testing.T) {
-	raw := []byte(`{"items":[{"shopItemId":"bad","grantType":"seed","grantItemId":"seed_rose","quantity":0,"currency":["coin"],"price":1}]}`)
+	raw := []byte(`{"items":[{"shopItemId":"bad","grantType":"seed","grantItemId":"seed_rose","quantity":0,"coinPrice":1}]}`)
 	if _, err := parseShopItemDefinitions(raw); err == nil {
 		t.Fatal("expected quantity validation error")
 	}
@@ -129,8 +126,8 @@ func TestListShopItemDefinitionsSortedCopy(t *testing.T) {
 	defer setShopItemDefinitions(old)
 
 	setShopItemDefinitions([]ShopItemDefinition{
-		{ShopItemID: "b", GrantType: shopGrantTypePot, GrantItemID: "pot_b", Quantity: 1, Currency: []string{shopCurrencyCoin}, Price: 1},
-		{ShopItemID: "a", GrantType: shopGrantTypePot, GrantItemID: "pot_a", Quantity: 1, Currency: []string{shopCurrencyCoin}, Price: 1},
+		{ShopItemID: "b", GrantType: shopGrantTypePot, GrantItemID: "pot_b", Quantity: 1, CoinPrice: 1},
+		{ShopItemID: "a", GrantType: shopGrantTypePot, GrantItemID: "pot_a", Quantity: 1, CoinPrice: 1},
 	})
 
 	got := listShopItemDefinitions()
@@ -149,9 +146,9 @@ func TestListShopItemDefinitionsByCategory(t *testing.T) {
 	defer setShopItemDefinitions(old)
 
 	setShopItemDefinitions([]ShopItemDefinition{
-		{ShopItemID: "pot_wood", GrantType: shopGrantTypePot, GrantItemID: "pot_wood", Quantity: 1, Currency: []string{shopCurrencyCoin}, Price: 1},
-		{ShopItemID: "seed_rose_pack", GrantType: shopGrantTypeSeed, GrantItemID: "seed_rose", Quantity: 5, Currency: []string{shopCurrencyCoin}, Price: 1},
-		{ShopItemID: "flower_rose", GrantType: shopGrantTypeItem, GrantItemID: "flower_rose", Quantity: 1, Currency: []string{shopCurrencyGem}, Price: 1},
+		{ShopItemID: "pot_wood", GrantType: shopGrantTypePot, GrantItemID: "pot_wood", Quantity: 1, CoinPrice: 1},
+		{ShopItemID: "seed_rose_pack", GrantType: shopGrantTypeSeed, GrantItemID: "seed_rose", Quantity: 5, CoinPrice: 1},
+		{ShopItemID: "flower_rose", GrantType: shopGrantTypeItem, GrantItemID: "flower_rose", Quantity: 1, GemPrice: 1},
 	})
 
 	got := listShopItemDefinitionsByCategory()
@@ -174,8 +171,7 @@ func TestPaginateShopItemDefinitionsDefaultsToTwelveItems(t *testing.T) {
 			GrantType:   shopGrantTypeItem,
 			GrantItemID: "flower_rose",
 			Quantity:    1,
-			Currency:    []string{shopCurrencyCoin},
-			Price:       1,
+			CoinPrice:   1,
 		}
 	}
 
@@ -204,8 +200,8 @@ func TestListShopItemDefinitionsForCategory(t *testing.T) {
 	defer setShopItemDefinitions(old)
 
 	setShopItemDefinitions([]ShopItemDefinition{
-		{ShopItemID: "pot_wood", GrantType: shopGrantTypePot, GrantItemID: "pot_wood", Quantity: 1, Currency: []string{shopCurrencyCoin}, Price: 1},
-		{ShopItemID: "flower_rose", GrantType: shopGrantTypeItem, GrantItemID: "flower_rose", Quantity: 1, Currency: []string{shopCurrencyGem}, Price: 1},
+		{ShopItemID: "pot_wood", GrantType: shopGrantTypePot, GrantItemID: "pot_wood", Quantity: 1, CoinPrice: 1},
+		{ShopItemID: "flower_rose", GrantType: shopGrantTypeItem, GrantItemID: "flower_rose", Quantity: 1, GemPrice: 1},
 	})
 
 	got := listShopItemDefinitionsForCategory("pot")
@@ -215,7 +211,7 @@ func TestListShopItemDefinitionsForCategory(t *testing.T) {
 }
 
 func TestResolvePurchaseCurrency(t *testing.T) {
-	def := ShopItemDefinition{Currency: []string{shopCurrencyCoin, shopCurrencyGem}}
+	def := ShopItemDefinition{CoinPrice: 10, GemPrice: 1}
 	if _, err := resolvePurchaseCurrency(def, ""); err == nil {
 		t.Fatal("expected currency required for multi-currency item")
 	}
@@ -227,13 +223,16 @@ func TestResolvePurchaseCurrency(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 
-	def.Currency = []string{shopCurrencyCoin}
+	def = ShopItemDefinition{CoinPrice: 10}
 	got, err = resolvePurchaseCurrency(def, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got != shopCurrencyCoin {
 		t.Fatalf("got %q", got)
+	}
+	if _, err := resolvePurchaseCurrency(def, shopCurrencyGem); err == nil {
+		t.Fatal("expected gem to be disabled when gemPrice is 0")
 	}
 }
 

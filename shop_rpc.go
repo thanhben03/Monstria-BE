@@ -245,12 +245,17 @@ func PurchaseShopItemRPC(
 func resolvePurchaseCurrency(def ShopItemDefinition, requested string) (string, error) {
 	currency := strings.TrimSpace(strings.ToLower(requested))
 	if currency == "" {
-		if len(def.Currency) == 1 {
-			return def.Currency[0], nil
+		canUseCoin := def.CoinPrice > 0
+		canUseGem := def.GemPrice > 0
+		if canUseCoin && !canUseGem {
+			return shopCurrencyCoin, nil
+		}
+		if canUseGem && !canUseCoin {
+			return shopCurrencyGem, nil
 		}
 		return "", runtime.NewError("currency is required", 3)
 	}
-	if !shopItemAllowsCurrency(def, currency) {
+	if shopItemPriceForCurrency(def, currency) < 1 {
 		return "", runtime.NewError("currency is not allowed for this shop item", 3)
 	}
 	return currency, nil

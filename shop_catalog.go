@@ -24,16 +24,14 @@ const (
 )
 
 type ShopItemDefinition struct {
-	ShopItemID    string   `json:"shopItemId"`
-	GrantType     string   `json:"grantType"`
-	GrantItemID   string   `json:"grantItemId"`
-	Quantity      int      `json:"quantity"`
-	Currency      []string `json:"currency"`
-	Price         int      `json:"price"`
-	CoinPrice     int      `json:"coinPrice,omitempty"`
-	GemPrice      int      `json:"gemPrice,omitempty"`
-	RequiredLevel int      `json:"requiredLevel,omitempty"`
-	Disabled      bool     `json:"disabled,omitempty"`
+	ShopItemID    string `json:"shopItemId"`
+	GrantType     string `json:"grantType"`
+	GrantItemID   string `json:"grantItemId"`
+	Quantity      int    `json:"quantity"`
+	CoinPrice     int    `json:"coinPrice,omitempty"`
+	GemPrice      int    `json:"gemPrice,omitempty"`
+	RequiredLevel int    `json:"requiredLevel,omitempty"`
+	Disabled      bool   `json:"disabled,omitempty"`
 
 	GrowthTime      string   `json:"growthTime,omitempty"`
 	HarvestQuantity int      `json:"harvestQuantity,omitempty"`
@@ -159,7 +157,6 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 		def.ShopItemID = strings.TrimSpace(def.ShopItemID)
 		def.GrantType = normalizeShopGrantType(def.GrantType)
 		def.GrantItemID = strings.TrimSpace(def.GrantItemID)
-		def.Currency = normalizeShopCurrencies(def.Currency)
 		def.GrowthTime = strings.TrimSpace(def.GrowthTime)
 		def.WaterNeed = strings.TrimSpace(def.WaterNeed)
 		def.AttractedBugs = normalizeShopTextList(def.AttractedBugs)
@@ -180,11 +177,8 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 		if def.Quantity < 1 {
 			return nil, fmt.Errorf("items[%d].quantity must be greater than 0", i)
 		}
-		if len(def.Currency) == 0 {
-			return nil, fmt.Errorf("items[%d].currency must contain coin or gem", i)
-		}
-		if def.Price < 1 && def.CoinPrice < 1 && def.GemPrice < 1 {
-			return nil, fmt.Errorf("items[%d].price, coinPrice, or gemPrice must be greater than 0", i)
+		if def.CoinPrice < 1 && def.GemPrice < 1 {
+			return nil, fmt.Errorf("items[%d].coinPrice or gemPrice must be greater than 0", i)
 		}
 		if def.RequiredLevel < 0 {
 			return nil, fmt.Errorf("items[%d].requiredLevel cannot be negative", i)
@@ -200,11 +194,6 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 		}
 		if def.GoldPerHour < 0 {
 			return nil, fmt.Errorf("items[%d].goldPerHour cannot be negative", i)
-		}
-		for _, currency := range def.Currency {
-			if shopItemPriceForCurrency(def, currency) < 1 {
-				return nil, fmt.Errorf("items[%d].%s price must be greater than 0", i, currency)
-			}
 		}
 
 		seenIDs[def.ShopItemID] = struct{}{}
@@ -224,28 +213,6 @@ func normalizeShopGrantType(grantType string) string {
 	default:
 		return ""
 	}
-}
-
-func normalizeShopCurrencies(in []string) []string {
-	seen := make(map[string]struct{}, len(in))
-	out := make([]string, 0, len(in))
-	for _, currency := range in {
-		switch strings.TrimSpace(strings.ToLower(currency)) {
-		case shopCurrencyCoin:
-			currency = shopCurrencyCoin
-		case shopCurrencyGem:
-			currency = shopCurrencyGem
-		default:
-			continue
-		}
-		if _, ok := seen[currency]; ok {
-			continue
-		}
-		seen[currency] = struct{}{}
-		out = append(out, currency)
-	}
-	sort.Strings(out)
-	return out
 }
 
 func normalizeShopTextList(in []string) []string {
@@ -280,7 +247,6 @@ func buildShopItemDefinitionByID(defs []ShopItemDefinition) map[string]ShopItemD
 		def.ShopItemID = id
 		def.GrantType = normalizeShopGrantType(def.GrantType)
 		def.GrantItemID = strings.TrimSpace(def.GrantItemID)
-		def.Currency = normalizeShopCurrencies(def.Currency)
 		def.GrowthTime = strings.TrimSpace(def.GrowthTime)
 		def.WaterNeed = strings.TrimSpace(def.WaterNeed)
 		def.AttractedBugs = normalizeShopTextList(def.AttractedBugs)
@@ -390,26 +356,12 @@ func shopItemDefinitionForID(shopItemID string) (ShopItemDefinition, error) {
 	return def, nil
 }
 
-func shopItemAllowsCurrency(def ShopItemDefinition, currency string) bool {
-	currency = strings.TrimSpace(strings.ToLower(currency))
-	for _, allowed := range def.Currency {
-		if allowed == currency {
-			return true
-		}
-	}
-	return false
-}
-
 func shopItemPriceForCurrency(def ShopItemDefinition, currency string) int {
 	switch strings.TrimSpace(strings.ToLower(currency)) {
 	case shopCurrencyCoin:
-		if def.CoinPrice > 0 {
-			return def.CoinPrice
-		}
+		return def.CoinPrice
 	case shopCurrencyGem:
-		if def.GemPrice > 0 {
-			return def.GemPrice
-		}
+		return def.GemPrice
 	}
-	return def.Price
+	return 0
 }
