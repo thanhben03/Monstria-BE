@@ -6,16 +6,20 @@
         "grantType": "pot",
         "grantItemId": "chaudong",
         "quantity": 1,
-        "currency": ["coin"],
-        "price": 100
+        "currency": ["coin", "gem"],
+        "price": 100,
+        "coinPrice": 120,
+        "gemPrice": 2
       },
 	  {
 		"shopItemId": "pot_01",
 		"grantType": "pot",
 		"grantItemId": "pot_01",
 		"quantity": 1,
-		"currency": ["coin"],
-		"price": 500
+		"currency": ["coin", "gem"],
+		"price": 500,
+		"coinPrice": 480,
+		"gemPrice": 5
 	  },
 	  {
         "shopItemId": "pot_02",
@@ -23,7 +27,9 @@
         "grantItemId": "pot_02",
         "quantity": 1,
         "currency": ["coin", "gem"],
-        "price": 100
+        "price": 100,
+        "coinPrice": 160,
+        "gemPrice": 3
       },
 	  {
 		"shopItemId": "pot_03",
@@ -31,7 +37,9 @@
 		"grantItemId": "pot_03",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 200
+		"price": 200,
+		"coinPrice": 230,
+		"gemPrice": 4
 	  },
 	  {
 		"shopItemId": "pot_04",
@@ -39,7 +47,9 @@
 		"grantItemId": "pot_04",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 250
+		"price": 250,
+		"coinPrice": 275,
+		"gemPrice": 4
 	  },
 	  {
 		"shopItemId": "pot_05",
@@ -47,7 +57,9 @@
 		"grantItemId": "pot_05",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 300
+		"price": 300,
+		"coinPrice": 340,
+		"gemPrice": 6
 	  },
 	  {
 		"shopItemId": "pot_06",
@@ -55,7 +67,9 @@
 		"grantItemId": "pot_06",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 350
+		"price": 350,
+		"coinPrice": 390,
+		"gemPrice": 7
 	  },
 	  {
 		"shopItemId": "pot_07",
@@ -63,7 +77,9 @@
 		"grantItemId": "pot_07",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 400
+		"price": 400,
+		"coinPrice": 430,
+		"gemPrice": 8
 	  },
 	  {
 		"shopItemId": "pot_08",
@@ -71,7 +87,9 @@
 		"grantItemId": "pot_08",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 450
+		"price": 450,
+		"coinPrice": 510,
+		"gemPrice": 9
 	  },
 	  {
 		"shopItemId": "pot_09",
@@ -79,7 +97,9 @@
 		"grantItemId": "pot_09",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 500
+		"price": 500,
+		"coinPrice": 575,
+		"gemPrice": 10
 	  },
 	  {
 		"shopItemId": "pot_10",
@@ -87,7 +107,9 @@
 		"grantItemId": "pot_10",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 550
+		"price": 550,
+		"coinPrice": 620,
+		"gemPrice": 11
 	  },
 	  {
 		"shopItemId": "pot_11",
@@ -95,7 +117,9 @@
 		"grantItemId": "pot_11",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 600
+		"price": 600,
+		"coinPrice": 690,
+		"gemPrice": 12
 	  },
 	  {
 		"shopItemId": "pot_12",
@@ -103,7 +127,9 @@
 		"grantItemId": "pot_12",
 		"quantity": 1,
 		"currency": ["coin", "gem"],
-		"price": 650
+		"price": 650,
+		"coinPrice": 760,
+		"gemPrice": 13
 	  }
     ],
     "seed": [
