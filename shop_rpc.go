@@ -20,6 +20,14 @@ type getShopCatalogPayload struct {
 	Category string `json:"category"`
 }
 
+type getShopItemPayload struct {
+	ShopItemID string `json:"shopItemId"`
+}
+
+type getShopItemResponse struct {
+	Item ShopItemDefinition `json:"item"`
+}
+
 type shopPurchaseResult struct {
 	ShopItemID  string `json:"shopItemId"`
 	GrantType   string `json:"grantType"`
@@ -66,6 +74,36 @@ func GetShopCatalogRPC(
 	if err != nil {
 		logger.Error("marshal shop catalog: %v", err)
 		return "", runtime.NewError("failed to load shop catalog", 13)
+	}
+	return string(raw), nil
+}
+
+func GetShopItemRPC(
+	ctx context.Context,
+	logger runtime.Logger,
+	_ *sql.DB,
+	_ runtime.NakamaModule,
+	payload string,
+) (string, error) {
+	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
+	if !ok || userID == "" {
+		return "", runtime.NewError("unauthorized", 16)
+	}
+
+	var body getShopItemPayload
+	if err := json.Unmarshal([]byte(payload), &body); err != nil {
+		return "", runtime.NewError("invalid JSON payload", 3)
+	}
+
+	def, err := shopItemDefinitionForID(body.ShopItemID)
+	if err != nil {
+		return "", err
+	}
+
+	raw, err := json.Marshal(getShopItemResponse{Item: def})
+	if err != nil {
+		logger.Error("marshal shop item: %v", err)
+		return "", runtime.NewError("failed to load shop item", 13)
 	}
 	return string(raw), nil
 }

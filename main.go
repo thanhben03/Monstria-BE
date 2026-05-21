@@ -54,6 +54,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("get_shop_catalog", GetShopCatalogRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("get_shop_item", GetShopItemRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("purchase_shop_item", PurchaseShopItemRPC); err != nil {
 		return err
 	}

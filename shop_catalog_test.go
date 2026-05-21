@@ -35,6 +35,65 @@ func TestParseShopItemDefinitions(t *testing.T) {
 	}
 }
 
+func TestShopItemDefinitionForIDReturnsMetadata(t *testing.T) {
+	old := listShopItemDefinitions()
+	defer setShopItemDefinitions(old)
+
+	setShopItemDefinitions([]ShopItemDefinition{
+		{
+			ShopItemID:      "flower_rose",
+			GrantType:       shopGrantTypeItem,
+			GrantItemID:     "flower_rose",
+			Quantity:        1,
+			Currency:        []string{shopCurrencyCoin, shopCurrencyGem},
+			CoinPrice:       500,
+			GemPrice:        5,
+			GrowthTime:      "14:00:00",
+			HarvestQuantity: 1,
+			WaterNeed:       "ít",
+			ExpReward:       10,
+			AttractedBugs:   []string{"bọ rùa", "ong"},
+			Desc:            "Hoa hồng test",
+			GoldPerHour:     5,
+		},
+	})
+
+	got, err := shopItemDefinitionForID(" flower_rose ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.GrowthTime != "14:00:00" || got.HarvestQuantity != 1 || got.WaterNeed != "ít" {
+		t.Fatalf("unexpected metadata %#v", got)
+	}
+	if got.CoinPrice != 500 || got.GemPrice != 5 || got.GoldPerHour != 5 {
+		t.Fatalf("unexpected prices/reward %#v", got)
+	}
+	if len(got.AttractedBugs) != 2 || got.AttractedBugs[0] != "bọ rùa" || got.AttractedBugs[1] != "ong" {
+		t.Fatalf("unexpected bugs %#v", got.AttractedBugs)
+	}
+}
+
+func TestShopItemDefinitionForIDRejectsDisabledItem(t *testing.T) {
+	old := listShopItemDefinitions()
+	defer setShopItemDefinitions(old)
+
+	setShopItemDefinitions([]ShopItemDefinition{
+		{
+			ShopItemID:  "disabled",
+			GrantType:   shopGrantTypePot,
+			GrantItemID: "pot_01",
+			Quantity:    1,
+			Currency:    []string{shopCurrencyCoin},
+			Price:       1,
+			Disabled:    true,
+		},
+	})
+
+	if _, err := shopItemDefinitionForID("disabled"); err == nil {
+		t.Fatal("expected disabled shop item to be hidden")
+	}
+}
+
 func TestParseShopItemDefinitionsSupportsLegacyArray(t *testing.T) {
 	raw := []byte(`{
 		"items": [
