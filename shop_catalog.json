@@ -2,11 +2,27 @@
   "items": {
     "pot": [
       {
-        "shopItemId": "pot_wood",
+        "shopItemId": "chaudong",
         "grantType": "pot",
         "grantItemId": "pot_wood",
         "quantity": 1,
         "currency": ["coin"],
+        "price": 100
+      },
+	  {
+		"shopItemId": "pot_01",
+		"grantType": "pot",
+		"grantItemId": "pot_metal",
+		"quantity": 1,
+		"currency": ["coin"],
+		"price": 500
+	  },
+	  {
+        "shopItemId": "pot_01",
+        "grantType": "pot",
+        "grantItemId": "pot_wood",
+        "quantity": 1,
+        "currency": ["coin", "gem"],
         "price": 100
       }
     ],

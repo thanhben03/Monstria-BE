@@ -14,6 +14,12 @@ type purchaseShopItemPayload struct {
 	Currency   string `json:"currency"`
 }
 
+type getShopCatalogPayload struct {
+	Page     int    `json:"page"`
+	PageSize int    `json:"pageSize"`
+	Category string `json:"category"`
+}
+
 type shopPurchaseResult struct {
 	ShopItemID  string `json:"shopItemId"`
 	GrantType   string `json:"grantType"`
@@ -34,14 +40,29 @@ func GetShopCatalogRPC(
 	logger runtime.Logger,
 	_ *sql.DB,
 	_ runtime.NakamaModule,
-	_ string,
+	payload string,
 ) (string, error) {
 	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
 	if !ok || userID == "" {
 		return "", runtime.NewError("unauthorized", 16)
 	}
 
-	raw, err := json.Marshal(shopCatalogResponse{Items: listShopItemDefinitionsByCategory()})
+	var body getShopCatalogPayload
+	if payload != "" {
+		if err := json.Unmarshal([]byte(payload), &body); err != nil {
+			return "", runtime.NewError("invalid JSON payload", 3)
+		}
+	}
+
+	category := strings.TrimSpace(strings.ToLower(body.Category))
+	defs := listShopItemDefinitionsForCategory(category)
+	pageItems, pagination := paginateShopItemDefinitions(defs, body.Page, body.PageSize)
+	pagination.Category = category
+
+	raw, err := json.Marshal(shopCatalogResponse{
+		Items:      groupShopItemDefinitionsByCategory(pageItems),
+		Pagination: pagination,
+	})
 	if err != nil {
 		logger.Error("marshal shop catalog: %v", err)
 		return "", runtime.NewError("failed to load shop catalog", 13)

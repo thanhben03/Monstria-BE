@@ -107,6 +107,54 @@ func TestListShopItemDefinitionsByCategory(t *testing.T) {
 	}
 }
 
+func TestPaginateShopItemDefinitionsDefaultsToTwelveItems(t *testing.T) {
+	defs := make([]ShopItemDefinition, 13)
+	for i := range defs {
+		defs[i] = ShopItemDefinition{
+			ShopItemID:  "item",
+			GrantType:   shopGrantTypeItem,
+			GrantItemID: "flower_rose",
+			Quantity:    1,
+			Currency:    []string{shopCurrencyCoin},
+			Price:       1,
+		}
+	}
+
+	pageItems, pagination := paginateShopItemDefinitions(defs, 1, 0)
+	if len(pageItems) != 12 {
+		t.Fatalf("got %d items", len(pageItems))
+	}
+	if pagination.Page != 1 || pagination.PageSize != 12 || pagination.Total != 13 || pagination.TotalPages != 2 || !pagination.HasNext {
+		t.Fatalf("unexpected pagination %#v", pagination)
+	}
+}
+
+func TestPaginateShopItemDefinitionsCapsPageSizeAtTwelve(t *testing.T) {
+	defs := make([]ShopItemDefinition, 20)
+	pageItems, pagination := paginateShopItemDefinitions(defs, 1, 99)
+	if len(pageItems) != 12 {
+		t.Fatalf("got %d items", len(pageItems))
+	}
+	if pagination.PageSize != 12 {
+		t.Fatalf("got page size %d", pagination.PageSize)
+	}
+}
+
+func TestListShopItemDefinitionsForCategory(t *testing.T) {
+	old := listShopItemDefinitions()
+	defer setShopItemDefinitions(old)
+
+	setShopItemDefinitions([]ShopItemDefinition{
+		{ShopItemID: "pot_wood", GrantType: shopGrantTypePot, GrantItemID: "pot_wood", Quantity: 1, Currency: []string{shopCurrencyCoin}, Price: 1},
+		{ShopItemID: "flower_rose", GrantType: shopGrantTypeItem, GrantItemID: "flower_rose", Quantity: 1, Currency: []string{shopCurrencyGem}, Price: 1},
+	})
+
+	got := listShopItemDefinitionsForCategory("pot")
+	if len(got) != 1 || got[0].ShopItemID != "pot_wood" {
+		t.Fatalf("unexpected category result %#v", got)
+	}
+}
+
 func TestResolvePurchaseCurrency(t *testing.T) {
 	def := ShopItemDefinition{Currency: []string{shopCurrencyCoin, shopCurrencyGem}}
 	if _, err := resolvePurchaseCurrency(def, ""); err == nil {

@@ -39,7 +39,17 @@ type shopCatalogConfig struct {
 }
 
 type shopCatalogResponse struct {
-	Items map[string][]ShopItemDefinition `json:"items"`
+	Items      map[string][]ShopItemDefinition `json:"items"`
+	Pagination shopCatalogPagination           `json:"pagination"`
+}
+
+type shopCatalogPagination struct {
+	Page       int    `json:"page"`
+	PageSize   int    `json:"pageSize"`
+	Total      int    `json:"total"`
+	TotalPages int    `json:"totalPages"`
+	HasNext    bool   `json:"hasNext"`
+	Category   string `json:"category,omitempty"`
 }
 
 var shopItemDefinitions []ShopItemDefinition
@@ -238,12 +248,71 @@ func listShopItemDefinitions() []ShopItemDefinition {
 
 func listShopItemDefinitionsByCategory() map[string][]ShopItemDefinition {
 	defs := listShopItemDefinitions()
+	return groupShopItemDefinitionsByCategory(defs)
+}
+
+func groupShopItemDefinitionsByCategory(defs []ShopItemDefinition) map[string][]ShopItemDefinition {
 	out := make(map[string][]ShopItemDefinition)
 	for _, def := range defs {
 		category := shopCategoryForGrantType(def.GrantType)
 		out[category] = append(out[category], def)
 	}
 	return out
+}
+
+func listShopItemDefinitionsForCategory(category string) []ShopItemDefinition {
+	category = strings.TrimSpace(strings.ToLower(category))
+	if category == "" {
+		return listShopItemDefinitions()
+	}
+
+	byCategory := listShopItemDefinitionsByCategory()
+	return append([]ShopItemDefinition(nil), byCategory[category]...)
+}
+
+func paginateShopItemDefinitions(defs []ShopItemDefinition, page int, pageSize int) ([]ShopItemDefinition, shopCatalogPagination) {
+	const defaultPageSize = 12
+	const maxPageSize = 12
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = defaultPageSize
+	}
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+
+	total := len(defs)
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + pageSize - 1) / pageSize
+	}
+
+	start := (page - 1) * pageSize
+	if start >= total {
+		return []ShopItemDefinition{}, shopCatalogPagination{
+			Page:       page,
+			PageSize:   pageSize,
+			Total:      total,
+			TotalPages: totalPages,
+			HasNext:    false,
+		}
+	}
+
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+
+	return append([]ShopItemDefinition(nil), defs[start:end]...), shopCatalogPagination{
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      total,
+		TotalPages: totalPages,
+		HasNext:    page < totalPages,
+	}
 }
 
 func shopCategoryForGrantType(grantType string) string {
