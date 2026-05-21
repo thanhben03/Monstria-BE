@@ -96,6 +96,14 @@
 		"quantity": 1,
 		"currency": ["coin", "gem"],
 		"price": 600
+	  },
+	  {
+		"shopItemId": "pot_12",
+		"grantType": "pot",
+		"grantItemId": "pot_12",
+		"quantity": 1,
+		"currency": ["coin", "gem"],
+		"price": 650
 	  }
     ],
     "seed": [
