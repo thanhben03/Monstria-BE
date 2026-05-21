@@ -141,7 +141,8 @@ func PurchaseShopItemRPC(
 	}
 
 	resourcesCopy := resources
-	if err := SpendPlayerCurrency(&resourcesCopy, currency, def.Price); err != nil {
+	price := shopItemPriceForCurrency(def, currency)
+	if err := SpendPlayerCurrency(&resourcesCopy, currency, price); err != nil {
 		return "", err
 	}
 
@@ -193,7 +194,7 @@ func PurchaseShopItemRPC(
 			GrantItemID: def.GrantItemID,
 			Quantity:    def.Quantity,
 			Currency:    currency,
-			Price:       def.Price,
+			Price:       price,
 		},
 	}
 	raw, err := json.Marshal(out)
