@@ -18,7 +18,7 @@
 		"price": 500
 	  },
 	  {
-        "shopItemId": "pot_01",
+        "shopItemId": "pot_02",
         "grantType": "pot",
         "grantItemId": "pot_wood",
         "quantity": 1,
