@@ -128,7 +128,7 @@
         "grantItemId": "seed_sunflower",
         "quantity": 1,
         "coinPrice": 200,
-        "gemPrice": 5,
+        "gemPrice": 0,
         "growthTime": "22:00:00",
         "harvestQuantity": 100,
         "waterNeed": "Rất nhiều",
