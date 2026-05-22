@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,12 @@ import (
 )
 
 const shopCatalogFileName = "shop_catalog.json"
+
+const (
+	shopCatalogStorageCollection = "catalog"
+	shopCatalogStorageKey        = "shop_catalog"
+	shopCatalogStorageUserID     = ""
+)
 
 const (
 	shopCurrencyCoin = "coin"
@@ -63,6 +70,8 @@ type shopCatalogPagination struct {
 var shopItemDefinitions []ShopItemDefinition
 var shopItemDefinitionByID = buildShopItemDefinitionByID(shopItemDefinitions)
 
+var errShopCatalogStorageNotFound = errors.New("shop catalog storage not found")
+
 func init() {
 	_ = loadShopItemDefinitions()
 }
@@ -73,6 +82,73 @@ func loadShopItemDefinitions() error {
 		return err
 	}
 	return loadShopItemDefinitionsFromFile(path)
+}
+
+func loadShopItemDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModule) error {
+	defs, err := readShopItemDefinitionsFromStorage(ctx, nk)
+	if err != nil {
+		return err
+	}
+	setShopItemDefinitions(defs)
+	return nil
+}
+
+func bootstrapShopItemDefinitionsStorage(ctx context.Context, nk runtime.NakamaModule) error {
+	if err := loadShopItemDefinitionsFromStorage(ctx, nk); err == nil {
+		return nil
+	} else if !errors.Is(err, errShopCatalogStorageNotFound) {
+		return err
+	}
+
+	path, err := resolveShopCatalogPath()
+	if err != nil {
+		return err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read shop catalog %q: %w", path, err)
+	}
+	if _, err := parseShopItemDefinitions(raw); err != nil {
+		return fmt.Errorf("parse shop catalog %q: %w", path, err)
+	}
+
+	if _, err := nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection:      shopCatalogStorageCollection,
+			Key:             shopCatalogStorageKey,
+			UserID:          shopCatalogStorageUserID,
+			Value:           string(raw),
+			Version:         "",
+			PermissionRead:  2,
+			PermissionWrite: 0,
+		},
+	}); err != nil {
+		return fmt.Errorf("write shop catalog storage: %w", err)
+	}
+
+	return loadShopItemDefinitionsFromStorage(ctx, nk)
+}
+
+func readShopItemDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModule) ([]ShopItemDefinition, error) {
+	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
+		{
+			Collection: shopCatalogStorageCollection,
+			Key:        shopCatalogStorageKey,
+			UserID:     shopCatalogStorageUserID,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("read shop catalog storage: %w", err)
+	}
+	if len(objs) == 0 {
+		return nil, fmt.Errorf("%w: %s/%s", errShopCatalogStorageNotFound, shopCatalogStorageCollection, shopCatalogStorageKey)
+	}
+
+	defs, err := parseShopItemDefinitions([]byte(objs[0].GetValue()))
+	if err != nil {
+		return nil, fmt.Errorf("parse shop catalog storage: %w", err)
+	}
+	return defs, nil
 }
 
 func resolveShopCatalogPath() (string, error) {
@@ -257,7 +333,11 @@ func buildShopItemDefinitionByID(defs []ShopItemDefinition) map[string]ShopItemD
 }
 
 func listShopItemDefinitions() []ShopItemDefinition {
-	out := append([]ShopItemDefinition(nil), shopItemDefinitions...)
+	return sortShopItemDefinitions(shopItemDefinitions)
+}
+
+func sortShopItemDefinitions(defs []ShopItemDefinition) []ShopItemDefinition {
+	out := append([]ShopItemDefinition(nil), defs...)
 	sort.Slice(out, func(i, j int) bool {
 		return out[i].ShopItemID < out[j].ShopItemID
 	})
@@ -265,8 +345,7 @@ func listShopItemDefinitions() []ShopItemDefinition {
 }
 
 func listShopItemDefinitionsByCategory() map[string][]ShopItemDefinition {
-	defs := listShopItemDefinitions()
-	return groupShopItemDefinitionsByCategory(defs)
+	return groupShopItemDefinitionsByCategory(listShopItemDefinitions())
 }
 
 func groupShopItemDefinitionsByCategory(defs []ShopItemDefinition) map[string][]ShopItemDefinition {
@@ -279,12 +358,17 @@ func groupShopItemDefinitionsByCategory(defs []ShopItemDefinition) map[string][]
 }
 
 func listShopItemDefinitionsForCategory(category string) []ShopItemDefinition {
+	return listShopItemDefinitionsForCategoryFrom(shopItemDefinitions, category)
+}
+
+func listShopItemDefinitionsForCategoryFrom(defs []ShopItemDefinition, category string) []ShopItemDefinition {
 	category = strings.TrimSpace(strings.ToLower(category))
+	defs = sortShopItemDefinitions(defs)
 	if category == "" {
-		return listShopItemDefinitions()
+		return defs
 	}
 
-	byCategory := listShopItemDefinitionsByCategory()
+	byCategory := groupShopItemDefinitionsByCategory(defs)
 	return append([]ShopItemDefinition(nil), byCategory[category]...)
 }
 
@@ -345,11 +429,15 @@ func shopCategoryForGrantType(grantType string) string {
 }
 
 func shopItemDefinitionForID(shopItemID string) (ShopItemDefinition, error) {
+	return shopItemDefinitionForIDFrom(shopItemDefinitions, shopItemID)
+}
+
+func shopItemDefinitionForIDFrom(defs []ShopItemDefinition, shopItemID string) (ShopItemDefinition, error) {
 	id := strings.TrimSpace(shopItemID)
 	if id == "" {
 		return ShopItemDefinition{}, runtime.NewError("shopItemId is required", 3)
 	}
-	def, ok := shopItemDefinitionByID[id]
+	def, ok := buildShopItemDefinitionByID(defs)[id]
 	if !ok || def.Disabled {
 		return ShopItemDefinition{}, runtime.NewError("shop item not found", 5)
 	}

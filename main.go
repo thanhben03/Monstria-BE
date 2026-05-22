@@ -20,7 +20,7 @@ func InitModule(
 	if err := loadFlowerDefinitions(); err != nil {
 		return err
 	}
-	if err := loadShopItemDefinitions(); err != nil {
+	if err := bootstrapShopItemDefinitionsStorage(ctx, nk); err != nil {
 		return err
 	}
 

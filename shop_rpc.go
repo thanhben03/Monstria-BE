@@ -47,7 +47,7 @@ func GetShopCatalogRPC(
 	ctx context.Context,
 	logger runtime.Logger,
 	_ *sql.DB,
-	_ runtime.NakamaModule,
+	nk runtime.NakamaModule,
 	payload string,
 ) (string, error) {
 	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
@@ -62,8 +62,14 @@ func GetShopCatalogRPC(
 		}
 	}
 
+	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
+	if err != nil {
+		logger.Error("read shop catalog storage: %v", err)
+		return "", runtime.NewError("failed to load shop catalog", 13)
+	}
+
 	category := strings.TrimSpace(strings.ToLower(body.Category))
-	defs := listShopItemDefinitionsForCategory(category)
+	defs := listShopItemDefinitionsForCategoryFrom(definitions, category)
 	pageItems, pagination := paginateShopItemDefinitions(defs, body.Page, body.PageSize)
 	pagination.Category = category
 
@@ -82,7 +88,7 @@ func GetShopItemRPC(
 	ctx context.Context,
 	logger runtime.Logger,
 	_ *sql.DB,
-	_ runtime.NakamaModule,
+	nk runtime.NakamaModule,
 	payload string,
 ) (string, error) {
 	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
@@ -95,7 +101,13 @@ func GetShopItemRPC(
 		return "", runtime.NewError("invalid JSON payload", 3)
 	}
 
-	def, err := shopItemDefinitionForID(body.ShopItemID)
+	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
+	if err != nil {
+		logger.Error("read shop item storage: %v", err)
+		return "", runtime.NewError("failed to load shop item", 13)
+	}
+
+	def, err := shopItemDefinitionForIDFrom(definitions, body.ShopItemID)
 	if err != nil {
 		return "", err
 	}
@@ -125,7 +137,13 @@ func PurchaseShopItemRPC(
 		return "", runtime.NewError("invalid JSON payload", 3)
 	}
 
-	def, err := shopItemDefinitionForID(body.ShopItemID)
+	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
+	if err != nil {
+		logger.Error("read shop catalog storage purchase: %v", err)
+		return "", runtime.NewError("failed to load shop catalog", 13)
+	}
+
+	def, err := shopItemDefinitionForIDFrom(definitions, body.ShopItemID)
 	if err != nil {
 		return "", err
 	}
