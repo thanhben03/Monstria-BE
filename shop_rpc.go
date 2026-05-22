@@ -74,6 +74,14 @@ func GetShopCatalogRPC(
 	category := strings.TrimSpace(strings.ToLower(body.Category))
 	defs := listShopItemDefinitionsForCategoryFrom(definitions, category)
 	pageItems, pagination := paginateShopItemDefinitions(defs, body.Page, body.PageSize)
+	resources, _, err := readPlayerResources(ctx, nk, userID)
+	if err != nil {
+		logger.Error("read resources shop catalog: %v", err)
+		return "", runtime.NewError("failed to load shop catalog", 13)
+	}
+	for i := range pageItems {
+		pageItems[i] = shopItemDefinitionWithoutDetailText(shopItemDefinitionForPlayerLevel(pageItems[i], resources.Level))
+	}
 	pagination.Category = category
 
 	raw, err := json.Marshal(shopCatalogResponse{
@@ -114,6 +122,13 @@ func GetShopItemRPC(
 	if err != nil {
 		return "", err
 	}
+	resources, _, err := readPlayerResources(ctx, nk, userID)
+	if err != nil {
+		logger.Error("read resources shop item detail: %v", err)
+		return "", runtime.NewError("failed to load shop item", 13)
+	}
+	def = shopItemDefinitionForPlayerLevel(def, resources.Level)
+	def = shopItemDefinitionWithDetailText(def)
 
 	raw, err := json.Marshal(getShopItemResponse{Item: def})
 	if err != nil {
@@ -151,10 +166,6 @@ func PurchaseShopItemRPC(
 		return "", err
 	}
 
-	currency, err := resolvePurchaseCurrency(def, body.Currency)
-	if err != nil {
-		return "", err
-	}
 	purchaseQuantity, err := resolvePurchaseQuantity(body.Quantity)
 	if err != nil {
 		return "", err
@@ -201,6 +212,12 @@ func PurchaseShopItemRPC(
 
 	if requiredLevel := normalizedRequiredLevel(def.RequiredLevel); resources.Level < requiredLevel {
 		return "", runtime.NewError("player level is too low", 9)
+	}
+
+	def = shopItemDefinitionForPlayerLevel(def, resources.Level)
+	currency, err := resolvePurchaseCurrency(def, body.Currency)
+	if err != nil {
+		return "", err
 	}
 
 	resourcesCopy := resources

@@ -41,6 +41,9 @@ type ShopItemDefinition struct {
 	RequiredLevel int    `json:"requiredLevel,omitempty"`
 	Disabled      bool   `json:"disabled,omitempty"`
 
+	Summary      string                     `json:"summary,omitempty"`
+	PriceByLevel []ShopPriceLevelDefinition `json:"priceByLevel,omitempty"`
+
 	GrowthTime      string   `json:"growthTime,omitempty"`
 	HarvestQuantity int      `json:"harvestQuantity,omitempty"`
 	WaterNeed       string   `json:"waterNeed,omitempty"`
@@ -50,6 +53,13 @@ type ShopItemDefinition struct {
 	GoldPerHour     int      `json:"goldPerHour,omitempty"`
 	DetailMainText  string   `json:"detailMainText,omitempty"`
 	DetailSideText  string   `json:"detailSideText,omitempty"`
+}
+
+type ShopPriceLevelDefinition struct {
+	MinLevel  int `json:"minLevel"`
+	MaxLevel  int `json:"maxLevel"`
+	CoinPrice int `json:"coinPrice,omitempty"`
+	GemPrice  int `json:"gemPrice,omitempty"`
 }
 
 type shopCatalogConfig struct {
@@ -237,6 +247,8 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 		def.NameItem = strings.TrimSpace(def.NameItem)
 		def.GrantType = normalizeShopGrantType(def.GrantType)
 		def.GrantItemID = strings.TrimSpace(def.GrantItemID)
+		def.Summary = strings.TrimSpace(def.Summary)
+		def.PriceByLevel = normalizeShopPriceLevels(def.PriceByLevel)
 		def.GrowthTime = strings.TrimSpace(def.GrowthTime)
 		def.WaterNeed = strings.TrimSpace(def.WaterNeed)
 		def.AttractedBugs = normalizeShopTextList(def.AttractedBugs)
@@ -259,7 +271,7 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 		if def.Quantity < 1 {
 			return nil, fmt.Errorf("items[%d].quantity must be greater than 0", i)
 		}
-		if def.CoinPrice < 1 && def.GemPrice < 1 {
+		if def.CoinPrice < 1 && def.GemPrice < 1 && !hasShopPriceLevelPrice(def.PriceByLevel) {
 			return nil, fmt.Errorf("items[%d].coinPrice or gemPrice must be greater than 0", i)
 		}
 		if def.RequiredLevel < 0 {
@@ -267,6 +279,20 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 		}
 		if def.CoinPrice < 0 || def.GemPrice < 0 {
 			return nil, fmt.Errorf("items[%d].coinPrice and gemPrice cannot be negative", i)
+		}
+		for j, priceLevel := range def.PriceByLevel {
+			if priceLevel.MinLevel < 1 {
+				return nil, fmt.Errorf("items[%d].priceByLevel[%d].minLevel must be greater than 0", i, j)
+			}
+			if priceLevel.MaxLevel > 0 && priceLevel.MaxLevel < priceLevel.MinLevel {
+				return nil, fmt.Errorf("items[%d].priceByLevel[%d].maxLevel cannot be less than minLevel", i, j)
+			}
+			if priceLevel.CoinPrice < 0 || priceLevel.GemPrice < 0 {
+				return nil, fmt.Errorf("items[%d].priceByLevel[%d].coinPrice and gemPrice cannot be negative", i, j)
+			}
+			if priceLevel.CoinPrice < 1 && priceLevel.GemPrice < 1 {
+				return nil, fmt.Errorf("items[%d].priceByLevel[%d].coinPrice or gemPrice must be greater than 0", i, j)
+			}
 		}
 		if def.HarvestQuantity < 0 {
 			return nil, fmt.Errorf("items[%d].harvestQuantity cannot be negative", i)
@@ -314,6 +340,29 @@ func normalizeShopTextList(in []string) []string {
 	return out
 }
 
+func normalizeShopPriceLevels(in []ShopPriceLevelDefinition) []ShopPriceLevelDefinition {
+	out := make([]ShopPriceLevelDefinition, 0, len(in))
+	for _, priceLevel := range in {
+		out = append(out, priceLevel)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].MinLevel == out[j].MinLevel {
+			return out[i].MaxLevel < out[j].MaxLevel
+		}
+		return out[i].MinLevel < out[j].MinLevel
+	})
+	return out
+}
+
+func hasShopPriceLevelPrice(priceLevels []ShopPriceLevelDefinition) bool {
+	for _, priceLevel := range priceLevels {
+		if priceLevel.CoinPrice > 0 || priceLevel.GemPrice > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func setShopItemDefinitions(defs []ShopItemDefinition) {
 	shopItemDefinitions = append([]ShopItemDefinition(nil), defs...)
 	shopItemDefinitionByID = buildShopItemDefinitionByID(shopItemDefinitions)
@@ -330,6 +379,8 @@ func buildShopItemDefinitionByID(defs []ShopItemDefinition) map[string]ShopItemD
 		def.NameItem = strings.TrimSpace(def.NameItem)
 		def.GrantType = normalizeShopGrantType(def.GrantType)
 		def.GrantItemID = strings.TrimSpace(def.GrantItemID)
+		def.Summary = strings.TrimSpace(def.Summary)
+		def.PriceByLevel = normalizeShopPriceLevels(def.PriceByLevel)
 		def.GrowthTime = strings.TrimSpace(def.GrowthTime)
 		def.WaterNeed = strings.TrimSpace(def.WaterNeed)
 		def.AttractedBugs = normalizeShopTextList(def.AttractedBugs)
@@ -461,4 +512,118 @@ func shopItemPriceForCurrency(def ShopItemDefinition, currency string) int {
 		return def.GemPrice
 	}
 	return 0
+}
+
+func shopItemDefinitionForPlayerLevel(def ShopItemDefinition, playerLevel int) ShopItemDefinition {
+	if def.GrantType != shopGrantTypePot || len(def.PriceByLevel) == 0 {
+		return def
+	}
+
+	level := normalizedRequiredLevel(playerLevel)
+	for _, priceLevel := range def.PriceByLevel {
+		if level < priceLevel.MinLevel {
+			continue
+		}
+		if priceLevel.MaxLevel > 0 && level > priceLevel.MaxLevel {
+			continue
+		}
+		def.CoinPrice = priceLevel.CoinPrice
+		def.GemPrice = priceLevel.GemPrice
+		return def
+	}
+	return def
+}
+
+func shopItemDefinitionWithDetailText(def ShopItemDefinition) ShopItemDefinition {
+	def.DetailMainText = ""
+	def.DetailSideText = ""
+
+	switch def.GrantType {
+	case shopGrantTypeSeed:
+		def.DetailMainText = renderSeedShopItemMainText(def)
+		def.DetailSideText = renderSeedShopItemSideText(def)
+	case shopGrantTypePot:
+		def.DetailMainText = strings.TrimSpace(def.Summary)
+		def.DetailSideText = renderPotShopItemSideText(def)
+	}
+	return def
+}
+
+func shopItemDefinitionWithoutDetailText(def ShopItemDefinition) ShopItemDefinition {
+	def.DetailMainText = ""
+	def.DetailSideText = ""
+	return def
+}
+
+func renderSeedShopItemMainText(def ShopItemDefinition) string {
+	lines := []string{
+		fmt.Sprintf("Tăng trưởng: <color=#00FF00>%s</color>", def.GrowthTime),
+		fmt.Sprintf("Cấp độ: <color=#FF66FF>%d</color>", normalizedRequiredLevel(def.RequiredLevel)),
+		fmt.Sprintf("Tổng thu hoạch: <color=#FFFF00>%d</color>", def.HarvestQuantity),
+	}
+	return strings.Join(lines, "\n")
+}
+
+func renderSeedShopItemSideText(def ShopItemDefinition) string {
+	lines := []string{
+		fmt.Sprintf("Cần nước: <color=#66CCFF>%s</color>", def.WaterNeed),
+		fmt.Sprintf("Kinh nghiệm: <color=#FFFF00>%d</color>", def.ExpReward),
+		fmt.Sprintf("Thu hút sâu: <color=#FF3333>%s</color>", strings.Join(def.AttractedBugs, ", ")),
+	}
+	if strings.TrimSpace(def.Desc) != "" {
+		lines = append(lines, "", fmt.Sprintf("<color=#FF33CC>%s</color>", def.Desc))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func renderPotShopItemSideText(def ShopItemDefinition) string {
+	lines := make([]string, 0, len(def.PriceByLevel)+3)
+	if strings.TrimSpace(def.Desc) != "" {
+		lines = append(lines, strings.TrimSpace(def.Desc), "")
+	}
+	lines = append(lines, "Giá mua chậu theo cấp độ:")
+
+	priceLevels := def.PriceByLevel
+	if len(priceLevels) == 0 {
+		priceLevels = []ShopPriceLevelDefinition{
+			{
+				MinLevel:  normalizedRequiredLevel(def.RequiredLevel),
+				MaxLevel:  0,
+				CoinPrice: def.CoinPrice,
+				GemPrice:  def.GemPrice,
+			},
+		}
+	}
+	for _, priceLevel := range priceLevels {
+		lines = append(lines, fmt.Sprintf(
+			"%s: <color=#FFFF00>%s / %s</color>",
+			formatShopLevelRange(priceLevel),
+			formatShopPrice(priceLevel.CoinPrice),
+			formatShopPrice(priceLevel.GemPrice),
+		))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func formatShopLevelRange(priceLevel ShopPriceLevelDefinition) string {
+	if priceLevel.MaxLevel < 1 {
+		return fmt.Sprintf("%d+", priceLevel.MinLevel)
+	}
+	return fmt.Sprintf("%d - %d", priceLevel.MinLevel, priceLevel.MaxLevel)
+}
+
+func formatShopPrice(price int) string {
+	if price == 0 {
+		return "0"
+	}
+
+	raw := fmt.Sprintf("%d", price)
+	out := make([]byte, 0, len(raw)+len(raw)/3)
+	for i, digit := range raw {
+		if i > 0 && (len(raw)-i)%3 == 0 {
+			out = append(out, ',')
+		}
+		out = append(out, byte(digit))
+	}
+	return string(out)
 }

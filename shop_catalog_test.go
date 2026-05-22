@@ -35,6 +35,39 @@ func TestParseShopItemDefinitions(t *testing.T) {
 	}
 }
 
+func TestParseShopItemDefinitionsSupportsPotPriceByLevel(t *testing.T) {
+	raw := []byte(`{
+		"items": {
+			"pot": [
+				{
+					"shopItemId": "pot_level",
+					"grantType": "pot",
+					"grantItemId": "pot_level",
+					"quantity": 1,
+					"summary": "Summary",
+					"desc": "Description",
+					"priceByLevel": [
+						{"minLevel": 11, "maxLevel": 20, "coinPrice": 240},
+						{"minLevel": 1, "maxLevel": 10, "coinPrice": 120}
+					]
+				}
+			]
+		}
+	}`)
+
+	defs, err := parseShopItemDefinitions(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	def := defs[0]
+	if def.Summary != "Summary" || def.Desc != "Description" {
+		t.Fatalf("unexpected text fields %#v", def)
+	}
+	if len(def.PriceByLevel) != 2 || def.PriceByLevel[0].MinLevel != 1 || def.PriceByLevel[1].MinLevel != 11 {
+		t.Fatalf("unexpected price levels %#v", def.PriceByLevel)
+	}
+}
+
 func TestShopItemDefinitionForIDReturnsMetadata(t *testing.T) {
 	old := listShopItemDefinitions()
 	defer setShopItemDefinitions(old)
@@ -69,6 +102,64 @@ func TestShopItemDefinitionForIDReturnsMetadata(t *testing.T) {
 	}
 	if len(got.AttractedBugs) != 2 || got.AttractedBugs[0] != "bọ rùa" || got.AttractedBugs[1] != "ong" {
 		t.Fatalf("unexpected bugs %#v", got.AttractedBugs)
+	}
+}
+
+func TestShopItemDefinitionWithDetailTextForSeed(t *testing.T) {
+	def := shopItemDefinitionWithDetailText(ShopItemDefinition{
+		GrantType:       shopGrantTypeSeed,
+		GrowthTime:      "14:00:00",
+		RequiredLevel:   2,
+		HarvestQuantity: 1,
+		WaterNeed:       "Ít",
+		ExpReward:       10,
+		AttractedBugs:   []string{"Bọ rùa", "ong"},
+		Desc:            "Hoa này dễ trồng.",
+	})
+
+	wantMain := "Tăng trưởng: <color=#00FF00>14:00:00</color>\nCấp độ: <color=#FF66FF>2</color>\nTổng thu hoạch: <color=#FFFF00>1</color>"
+	wantSide := "Cần nước: <color=#66CCFF>Ít</color>\nKinh nghiệm: <color=#FFFF00>10</color>\nThu hút sâu: <color=#FF3333>Bọ rùa, ong</color>\n\n<color=#FF33CC>Hoa này dễ trồng.</color>"
+	if def.DetailMainText != wantMain {
+		t.Fatalf("main text:\n%s", def.DetailMainText)
+	}
+	if def.DetailSideText != wantSide {
+		t.Fatalf("side text:\n%s", def.DetailSideText)
+	}
+}
+
+func TestShopItemDefinitionWithDetailTextForPot(t *testing.T) {
+	def := shopItemDefinitionWithDetailText(ShopItemDefinition{
+		GrantType: shopGrantTypePot,
+		Summary:   "Chậu đất nung đơn giản.",
+		Desc:      "Mô tả chậu.",
+		PriceByLevel: []ShopPriceLevelDefinition{
+			{MinLevel: 1, MaxLevel: 10, CoinPrice: 120},
+			{MinLevel: 11, MaxLevel: 20, CoinPrice: 240, GemPrice: 2},
+		},
+	})
+
+	wantMain := "Chậu đất nung đơn giản."
+	wantSide := "Mô tả chậu.\n\nGiá mua chậu theo cấp độ:\n1 - 10: <color=#FFFF00>120 / 0</color>\n11 - 20: <color=#FFFF00>240 / 2</color>"
+	if def.DetailMainText != wantMain {
+		t.Fatalf("main text:\n%s", def.DetailMainText)
+	}
+	if def.DetailSideText != wantSide {
+		t.Fatalf("side text:\n%s", def.DetailSideText)
+	}
+}
+
+func TestShopItemDefinitionForPlayerLevelUsesPotPriceByLevel(t *testing.T) {
+	def := shopItemDefinitionForPlayerLevel(ShopItemDefinition{
+		GrantType: shopGrantTypePot,
+		CoinPrice: 120,
+		PriceByLevel: []ShopPriceLevelDefinition{
+			{MinLevel: 1, MaxLevel: 10, CoinPrice: 120},
+			{MinLevel: 11, MaxLevel: 20, CoinPrice: 240, GemPrice: 3},
+		},
+	}, 12)
+
+	if def.CoinPrice != 240 || def.GemPrice != 3 {
+		t.Fatalf("unexpected price %#v", def)
 	}
 }
 

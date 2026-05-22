@@ -4,7 +4,28 @@
       {
         "shopItemId": "chaudong",
         "grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới. Chậu này có thể trồng được nhiều loại cây khác nhau, giúp bạn bắt đầu hành trình làm vườn của mình.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 120,
+			"gemPrice": 0
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 240,
+			"gemPrice": 0
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 360,
+			"gemPrice": 0
+		}
+		],
         "grantItemId": "chaudong",
         "quantity": 1,
         "coinPrice": 120,
@@ -13,7 +34,28 @@
 	  {
 		"shopItemId": "pot_01",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu gốm sứ nhỏ xinh, trang trí hoa văn tinh tế.",
+		"desc": "Chậu gốm sứ nhỏ xinh với họa tiết hoa văn tinh tế, phù hợp trồng cây cảnh nhỏ. Chất liệu gốm cao cấp giúp giữ ẩm tốt và thoát nước hiệu quả.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 450,
+			"gemPrice": 5
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 380,
+			"gemPrice": 4
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 320,
+			"gemPrice": 3
+		}
+		],
 		"grantItemId": "pot_01",
 		"quantity": 1,
 		"coinPrice": 480,
@@ -22,7 +64,28 @@
 	  {
         "shopItemId": "pot_02",
         "grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu nhựa composite bền đẹp, chống thấm nước tốt.",
+		"desc": "Chậu nhựa composite cao cấp với khả năng chống thấm nước tuyệt vời. Thiết kế nhẹ, dễ di chuyển và phù hợp với mọi không gian trồng cây.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 150,
+			"gemPrice": 2
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 280,
+			"gemPrice": 3
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 420,
+			"gemPrice": 4
+		}
+		],
         "grantItemId": "pot_02",
         "quantity": 1,
         "coinPrice": 160,
@@ -31,7 +94,28 @@
 	  {
 		"shopItemId": "pot_03",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu xi măng hiện đại, phong cách tối giản.",
+		"desc": "Chậu xi măng với thiết kế hiện đại, phong cách tối giản. Độ bền cao, thích hợp trồng cây lâu năm và cây có rễ phát triển mạnh.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 220,
+			"gemPrice": 3
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 340,
+			"gemPrice": 4
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 480,
+			"gemPrice": 5
+		}
+		],
 		"grantItemId": "pot_03",
 		"quantity": 1,
 		"coinPrice": 230,
@@ -40,7 +124,28 @@
 	  {
 		"shopItemId": "pot_04",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu gỗ tự nhiên, thân thiện môi trường.",
+		"desc": "Chậu gỗ tự nhiên được xử lý chống mối mọt, thân thiện với môi trường. Tạo cảm giác ấm cúng, gần gũi thiên nhiên cho khu vườn của bạn.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 260,
+			"gemPrice": 3
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 400,
+			"gemPrice": 5
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 550,
+			"gemPrice": 6
+		}
+		],
 		"grantItemId": "pot_04",
 		"quantity": 1,
 		"coinPrice": 275,
@@ -49,7 +154,28 @@
 	  {
 		"shopItemId": "pot_05",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu sứ cao cấp, họa tiết rồng phượng sang trọng.",
+		"desc": "Chậu sứ cao cấp với họa tiết rồng phượng tinh xảo, mang phong cách cổ điển Á Đông. Thích hợp trồng cây quý, tạo điểm nhấn cho không gian.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 320,
+			"gemPrice": 5
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 480,
+			"gemPrice": 6
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 640,
+			"gemPrice": 8
+		}
+		],
 		"grantItemId": "pot_05",
 		"quantity": 1,
 		"coinPrice": 340,
@@ -58,7 +184,28 @@
 	  {
 		"shopItemId": "pot_06",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu treo kim loại, tiết kiệm không gian.",
+		"desc": "Chậu treo kim loại chống gỉ với móc treo chắc chắn. Giải pháp hoàn hảo cho không gian nhỏ, tạo vườn treo độc đáo và bắt mắt.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 370,
+			"gemPrice": 6
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 540,
+			"gemPrice": 7
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 720,
+			"gemPrice": 9
+		}
+		],
 		"grantItemId": "pot_06",
 		"quantity": 1,
 		"coinPrice": 390,
@@ -67,7 +214,28 @@
 	  {
 		"shopItemId": "pot_07",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu đá granite tự nhiên, bền vững theo thời gian.",
+		"desc": "Chậu đá granite tự nhiên với độ bền vượt trội, chịu được mọi thời tiết. Vẻ đẹp tự nhiên của đá tạo nên sự sang trọng và đẳng cấp.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 410,
+			"gemPrice": 7
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 600,
+			"gemPrice": 8
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 800,
+			"gemPrice": 10
+		}
+		],
 		"grantItemId": "pot_07",
 		"quantity": 1,
 		"coinPrice": 430,
@@ -76,7 +244,28 @@
 	  {
 		"shopItemId": "pot_08",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu thủy tinh trong suốt, quan sát rễ cây dễ dàng.",
+		"desc": "Chậu thủy tinh trong suốt cho phép quan sát sự phát triển của rễ cây. Thiết kế hiện đại, phù hợp với cây thủy sinh và cây ưa ẩm.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 480,
+			"gemPrice": 8
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 680,
+			"gemPrice": 9
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 900,
+			"gemPrice": 11
+		}
+		],
 		"grantItemId": "pot_08",
 		"quantity": 1,
 		"coinPrice": 510,
@@ -85,7 +274,28 @@
 	  {
 		"shopItemId": "pot_09",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu men rạn cổ điển, nghệ thuật truyền thống.",
+		"desc": "Chậu men rạn với kỹ thuật nung truyền thống, mỗi chiếc đều có vân rạn độc đáo. Mang đậm giá trị nghệ thuật và văn hóa Việt Nam.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 540,
+			"gemPrice": 9
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 760,
+			"gemPrice": 10
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 1000,
+			"gemPrice": 12
+		}
+		],
 		"grantItemId": "pot_09",
 		"quantity": 1,
 		"coinPrice": 575,
@@ -94,7 +304,28 @@
 	  {
 		"shopItemId": "pot_10",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu composite vân đá marble, sang trọng đẳng cấp.",
+		"desc": "Chậu composite mô phỏng vân đá marble cao cấp, kết hợp giữa vẻ đẹp sang trọng và độ bền vượt trội. Phù hợp với không gian hiện đại và cây cảnh cao cấp.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 580,
+			"gemPrice": 10
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 820,
+			"gemPrice": 11
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 1100,
+			"gemPrice": 13
+		}
+		],
 		"grantItemId": "pot_10",
 		"quantity": 1,
 		"coinPrice": 620,
@@ -103,7 +334,28 @@
 	  {
 		"shopItemId": "pot_11",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu sắt rèn thủ công, phong cách vintage.",
+		"desc": "Chậu sắt rèn thủ công với họa tiết cổ điển, phong cách vintage độc đáo. Được xử lý chống gỉ, phù hợp trang trí sân vườn theo phong cách Châu Âu.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 650,
+			"gemPrice": 11
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 900,
+			"gemPrice": 12
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 1200,
+			"gemPrice": 14
+		}
+		],
 		"grantItemId": "pot_11",
 		"quantity": 1,
 		"coinPrice": 690,
@@ -112,7 +364,28 @@
 	  {
 		"shopItemId": "pot_12",
 		"grantType": "pot",
-		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
+		"summary": "Chậu gốm Bát Tràng cao cấp, di sản văn hóa Việt.",
+		"desc": "Chậu gốm Bát Tràng chính gốc với men xanh ngọc đặc trưng, sản phẩm thủ công mỹ nghệ cao cấp. Mang giá trị văn hóa và nghệ thuật truyền thống của làng gốm nổi tiếng.",
+		"priceByLevel": [
+		{
+			"minLevel": 1,
+			"maxLevel": 10,
+			"coinPrice": 720,
+			"gemPrice": 12
+		},
+		{
+			"minLevel": 11,
+			"maxLevel": 20,
+			"coinPrice": 980,
+			"gemPrice": 13
+		},
+		{
+			"minLevel": 21,
+			"maxLevel": 30,
+			"coinPrice": 1300,
+			"gemPrice": 15
+		}
+		],
 		"grantItemId": "pot_12",
 		"quantity": 1,
 		"coinPrice": 760,
