@@ -32,6 +32,7 @@ const (
 
 type ShopItemDefinition struct {
 	ShopItemID    string `json:"shopItemId"`
+	NameItem      string `json:"nameItem,omitempty"`
 	GrantType     string `json:"grantType"`
 	GrantItemID   string `json:"grantItemId"`
 	Quantity      int    `json:"quantity"`
@@ -231,6 +232,7 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 	seenIDs := make(map[string]struct{}, len(defs))
 	for i, def := range defs {
 		def.ShopItemID = strings.TrimSpace(def.ShopItemID)
+		def.NameItem = strings.TrimSpace(def.NameItem)
 		def.GrantType = normalizeShopGrantType(def.GrantType)
 		def.GrantItemID = strings.TrimSpace(def.GrantItemID)
 		def.GrowthTime = strings.TrimSpace(def.GrowthTime)
@@ -321,6 +323,7 @@ func buildShopItemDefinitionByID(defs []ShopItemDefinition) map[string]ShopItemD
 			continue
 		}
 		def.ShopItemID = id
+		def.NameItem = strings.TrimSpace(def.NameItem)
 		def.GrantType = normalizeShopGrantType(def.GrantType)
 		def.GrantItemID = strings.TrimSpace(def.GrantItemID)
 		def.GrowthTime = strings.TrimSpace(def.GrowthTime)
