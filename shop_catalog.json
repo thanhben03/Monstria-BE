@@ -4,6 +4,7 @@
       {
         "shopItemId": "chaudong",
         "grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
         "grantItemId": "chaudong",
         "quantity": 1,
         "coinPrice": 120,
@@ -12,6 +13,7 @@
 	  {
 		"shopItemId": "pot_01",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_01",
 		"quantity": 1,
 		"coinPrice": 480,
@@ -20,6 +22,7 @@
 	  {
         "shopItemId": "pot_02",
         "grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
         "grantItemId": "pot_02",
         "quantity": 1,
         "coinPrice": 160,
@@ -28,6 +31,7 @@
 	  {
 		"shopItemId": "pot_03",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_03",
 		"quantity": 1,
 		"coinPrice": 230,
@@ -36,6 +40,7 @@
 	  {
 		"shopItemId": "pot_04",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_04",
 		"quantity": 1,
 		"coinPrice": 275,
@@ -44,6 +49,7 @@
 	  {
 		"shopItemId": "pot_05",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_05",
 		"quantity": 1,
 		"coinPrice": 340,
@@ -52,6 +58,7 @@
 	  {
 		"shopItemId": "pot_06",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_06",
 		"quantity": 1,
 		"coinPrice": 390,
@@ -60,6 +67,7 @@
 	  {
 		"shopItemId": "pot_07",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_07",
 		"quantity": 1,
 		"coinPrice": 430,
@@ -68,6 +76,7 @@
 	  {
 		"shopItemId": "pot_08",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_08",
 		"quantity": 1,
 		"coinPrice": 510,
@@ -76,6 +85,7 @@
 	  {
 		"shopItemId": "pot_09",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_09",
 		"quantity": 1,
 		"coinPrice": 575,
@@ -84,6 +94,7 @@
 	  {
 		"shopItemId": "pot_10",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_10",
 		"quantity": 1,
 		"coinPrice": 620,
@@ -92,6 +103,7 @@
 	  {
 		"shopItemId": "pot_11",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_11",
 		"quantity": 1,
 		"coinPrice": 690,
@@ -100,6 +112,7 @@
 	  {
 		"shopItemId": "pot_12",
 		"grantType": "pot",
+		"desc": "Chậu đất nung đơn giản, phù hợp cho người chơi mới.",
 		"grantItemId": "pot_12",
 		"quantity": 1,
 		"coinPrice": 760,

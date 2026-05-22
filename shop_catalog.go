@@ -48,6 +48,8 @@ type ShopItemDefinition struct {
 	AttractedBugs   []string `json:"attractedBugs,omitempty"`
 	Desc            string   `json:"desc,omitempty"`
 	GoldPerHour     int      `json:"goldPerHour,omitempty"`
+	DetailMainText  string   `json:"detailMainText,omitempty"`
+	DetailSideText  string   `json:"detailSideText,omitempty"`
 }
 
 type shopCatalogConfig struct {
@@ -239,6 +241,8 @@ func validateShopItemDefinitions(defs []ShopItemDefinition) ([]ShopItemDefinitio
 		def.WaterNeed = strings.TrimSpace(def.WaterNeed)
 		def.AttractedBugs = normalizeShopTextList(def.AttractedBugs)
 		def.Desc = strings.TrimSpace(def.Desc)
+		def.DetailMainText = strings.TrimSpace(def.DetailMainText)
+		def.DetailSideText = strings.TrimSpace(def.DetailSideText)
 
 		if def.ShopItemID == "" {
 			return nil, fmt.Errorf("items[%d].shopItemId is required", i)
@@ -330,6 +334,8 @@ func buildShopItemDefinitionByID(defs []ShopItemDefinition) map[string]ShopItemD
 		def.WaterNeed = strings.TrimSpace(def.WaterNeed)
 		def.AttractedBugs = normalizeShopTextList(def.AttractedBugs)
 		def.Desc = strings.TrimSpace(def.Desc)
+		def.DetailMainText = strings.TrimSpace(def.DetailMainText)
+		def.DetailSideText = strings.TrimSpace(def.DetailSideText)
 		out[id] = def
 	}
 	return out
