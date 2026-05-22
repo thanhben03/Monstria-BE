@@ -236,6 +236,29 @@ func TestResolvePurchaseCurrency(t *testing.T) {
 	}
 }
 
+func TestResolvePurchaseQuantity(t *testing.T) {
+	got, err := resolvePurchaseQuantity(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 1 {
+		t.Fatalf("got %d", got)
+	}
+	got, err = resolvePurchaseQuantity(3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 3 {
+		t.Fatalf("got %d", got)
+	}
+	if _, err := resolvePurchaseQuantity(-1); err == nil {
+		t.Fatal("expected negative quantity to be rejected")
+	}
+	if _, err := resolvePurchaseQuantity(100); err == nil {
+		t.Fatal("expected large quantity to be rejected")
+	}
+}
+
 func TestGrantShopItem(t *testing.T) {
 	inv := defaultPlayerInventory()
 
@@ -257,6 +280,20 @@ func TestGrantShopItem(t *testing.T) {
 	}
 	if len(inv.Items) != 1 || inv.Items[0].Quantity != 1 {
 		t.Fatalf("unexpected items %#v", inv.Items)
+	}
+}
+
+func TestGrantShopItemQuantity(t *testing.T) {
+	inv := defaultPlayerInventory()
+
+	if err := grantShopItemQuantity(&inv, ShopItemDefinition{GrantType: shopGrantTypeSeed, GrantItemID: "seed_rose", Quantity: 5}, 15); err != nil {
+		t.Fatal(err)
+	}
+	if len(inv.Seeds) != 1 || inv.Seeds[0].ItemID != "seed_rose" || inv.Seeds[0].Quantity != 15 {
+		t.Fatalf("unexpected seeds %#v", inv.Seeds)
+	}
+	if err := grantShopItemQuantity(&inv, ShopItemDefinition{GrantType: shopGrantTypeSeed, GrantItemID: "seed_rose", Quantity: 5}, 0); err == nil {
+		t.Fatal("expected zero quantity to be rejected")
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 type purchaseShopItemPayload struct {
 	ShopItemID string `json:"shopItemId"`
 	Currency   string `json:"currency"`
+	Quantity   int    `json:"quantity"`
 }
 
 type getShopCatalogPayload struct {
@@ -29,12 +30,14 @@ type getShopItemResponse struct {
 }
 
 type shopPurchaseResult struct {
-	ShopItemID  string `json:"shopItemId"`
-	GrantType   string `json:"grantType"`
-	GrantItemID string `json:"grantItemId"`
-	Quantity    int    `json:"quantity"`
-	Currency    string `json:"currency"`
-	Price       int    `json:"price"`
+	ShopItemID       string `json:"shopItemId"`
+	GrantType        string `json:"grantType"`
+	GrantItemID      string `json:"grantItemId"`
+	Quantity         int    `json:"quantity"`
+	PurchaseQuantity int    `json:"purchaseQuantity"`
+	Currency         string `json:"currency"`
+	Price            int    `json:"price"`
+	UnitPrice        int    `json:"unitPrice"`
 }
 
 type purchaseShopItemResponse struct {
@@ -152,6 +155,10 @@ func PurchaseShopItemRPC(
 	if err != nil {
 		return "", err
 	}
+	purchaseQuantity, err := resolvePurchaseQuantity(body.Quantity)
+	if err != nil {
+		return "", err
+	}
 
 	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
 		{Collection: playerStateCollection, Key: playerStateKey, UserID: userID},
@@ -197,13 +204,15 @@ func PurchaseShopItemRPC(
 	}
 
 	resourcesCopy := resources
-	price := shopItemPriceForCurrency(def, currency)
+	unitPrice := shopItemPriceForCurrency(def, currency)
+	price := unitPrice * purchaseQuantity
 	if err := SpendPlayerCurrency(&resourcesCopy, currency, price); err != nil {
 		return "", err
 	}
 
 	invCopy := inv
-	if err := grantShopItem(&invCopy, def); err != nil {
+	grantQuantity := def.Quantity * purchaseQuantity
+	if err := grantShopItemQuantity(&invCopy, def, grantQuantity); err != nil {
 		return "", err
 	}
 
@@ -245,12 +254,14 @@ func PurchaseShopItemRPC(
 		Resources: resourcesCopy,
 		Inventory: invCopy,
 		Purchase: shopPurchaseResult{
-			ShopItemID:  def.ShopItemID,
-			GrantType:   def.GrantType,
-			GrantItemID: def.GrantItemID,
-			Quantity:    def.Quantity,
-			Currency:    currency,
-			Price:       price,
+			ShopItemID:       def.ShopItemID,
+			GrantType:        def.GrantType,
+			GrantItemID:      def.GrantItemID,
+			Quantity:         grantQuantity,
+			PurchaseQuantity: purchaseQuantity,
+			Currency:         currency,
+			Price:            price,
+			UnitPrice:        unitPrice,
 		},
 	}
 	raw, err := json.Marshal(out)
@@ -279,6 +290,20 @@ func resolvePurchaseCurrency(def ShopItemDefinition, requested string) (string, 
 	return currency, nil
 }
 
+func resolvePurchaseQuantity(quantity int) (int, error) {
+	if quantity == 0 {
+		return 1, nil
+	}
+	if quantity < 0 {
+		return 0, runtime.NewError("quantity must be positive", 3)
+	}
+	const maxPurchaseQuantity = 99
+	if quantity > maxPurchaseQuantity {
+		return 0, runtime.NewError("quantity is too large", 3)
+	}
+	return quantity, nil
+}
+
 func normalizedRequiredLevel(requiredLevel int) int {
 	if requiredLevel < 1 {
 		return 1
@@ -287,13 +312,21 @@ func normalizedRequiredLevel(requiredLevel int) int {
 }
 
 func grantShopItem(inv *PlayerInventory, def ShopItemDefinition) error {
+	return grantShopItemQuantity(inv, def, def.Quantity)
+}
+
+func grantShopItemQuantity(inv *PlayerInventory, def ShopItemDefinition, quantity int) error {
+	if quantity < 1 {
+		return runtime.NewError("quantity must be positive", 13)
+	}
+
 	switch def.GrantType {
 	case shopGrantTypePot:
-		return AddPot(inv, def.GrantItemID, def.Quantity)
+		return AddPot(inv, def.GrantItemID, quantity)
 	case shopGrantTypeSeed:
-		return AddSeed(inv, def.GrantItemID, def.Quantity)
+		return AddSeed(inv, def.GrantItemID, quantity)
 	case shopGrantTypeItem:
-		return AddItem(inv, def.GrantItemID, def.Quantity)
+		return AddItem(inv, def.GrantItemID, quantity)
 	default:
 		return runtime.NewError("grantType is invalid", 13)
 	}
