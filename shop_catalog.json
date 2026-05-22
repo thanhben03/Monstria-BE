@@ -108,7 +108,7 @@
     ],
     "seed": [
       {
-        "shopItemId": "seed_rose_pack",
+        "shopItemId": "seed_rose",
         "grantType": "seed",
         "grantItemId": "seed_rose",
         "quantity": 5,
@@ -121,23 +121,20 @@
         "attractedBugs": ["bọ rùa", "ong"],
         "desc": "Hạt giống hoa hồng dễ trồng, phù hợp cho người chơi mới.",
         "goldPerHour": 5
-      }
-    ],
-    "flower": [
-      {
-        "shopItemId": "flower_rose",
-        "grantType": "flower",
-        "grantItemId": "flower_rose",
+      },
+	  {
+        "shopItemId": "seed_sunflower",
+        "grantType": "seed",
+        "grantItemId": "seed_sunflower",
         "quantity": 1,
-        "coinPrice": 500,
+        "coinPrice": 200,
         "gemPrice": 5,
-        "requiredLevel": 2,
-        "growthTime": "14:00:00",
-        "harvestQuantity": 1,
-        "waterNeed": "ít",
+        "growthTime": "22:00:00",
+        "harvestQuantity": 100,
+        "waterNeed": "Rất nhiều",
         "expReward": 10,
-        "attractedBugs": ["bọ rùa", "ong"],
-        "desc": "Hoa hồng có màu sắc nổi bật, thu hút côn trùng có lợi và đem lại vàng đều theo thời gian.",
+        "attractedBugs": ["bọ rùa"],
+        "desc": "Hạt giống hoa hướng dương dễ trồng, phù hợp cho người chơi mới.",
         "goldPerHour": 5
       }
     ]
