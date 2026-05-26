@@ -79,6 +79,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("update_cloud_layers", UpdateCloudLayersRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("bau_cua_get_state", BauCuaGetStateRPC); err != nil {
+		return err
+	}
 
 	err = RegisterAuthHooks(initializer)
 	if err != nil {
