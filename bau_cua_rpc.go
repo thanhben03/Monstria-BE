@@ -377,24 +377,42 @@ func getOrCreateCurrentBauCuaRound(ctx context.Context, nk runtime.NakamaModule,
 
 func resolvePreviousBauCuaRound(ctx context.Context, logger runtime.Logger, nk runtime.NakamaModule, roomID string) error {
 	now := nowUnixSeconds()
-	currentStart := now - (now % bauCuaRoundSeconds)
-	previousStart := currentStart - bauCuaRoundSeconds
-	if previousStart < 0 {
-		return nil
+	cursor := ""
+	prefix := normalizeBauCuaRoomID(roomID) + ":"
+
+	for {
+		objects, nextCursor, err := nk.StorageList(ctx, "", "", bauCuaStorageCollection, 100, cursor)
+		if err != nil {
+			logger.Error("list pending bau cua rounds: %v", err)
+			return runtime.NewError("failed to resolve previous round", 13)
+		}
+
+		for _, obj := range objects {
+			if !strings.HasPrefix(obj.GetKey(), prefix) {
+				continue
+			}
+
+			var round bauCuaRoundRecord
+			if err := json.Unmarshal([]byte(obj.GetValue()), &round); err != nil {
+				logger.Error("decode pending bau cua round %s: %v", obj.GetKey(), err)
+				return runtime.NewError("failed to resolve previous round", 13)
+			}
+			if round.RoundID == "" || round.Resolved || now < round.BettingEndsAt {
+				continue
+			}
+
+			if _, _, err := resolveBauCuaRoundIfReady(ctx, logger, nk, round, obj.GetVersion()); err != nil {
+				return err
+			}
+		}
+
+		cursor = nextCursor
+		if cursor == "" {
+			break
+		}
 	}
 
-	roundID := buildBauCuaRoundID(roomID, previousStart)
-	round, roundVersion, err := readBauCuaRound(ctx, nk, roomID, roundID)
-	if err != nil {
-		logger.Error("read previous bau cua round: %v", err)
-		return runtime.NewError("failed to resolve previous round", 13)
-	}
-	if round.RoundID == "" || round.Resolved || now < round.EndsAt {
-		return nil
-	}
-
-	_, _, err = resolveBauCuaRoundIfReady(ctx, logger, nk, round, roundVersion)
-	return err
+	return nil
 }
 
 func resolveBauCuaRoundIfReady(
