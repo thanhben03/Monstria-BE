@@ -82,6 +82,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("bau_cua_get_state", BauCuaGetStateRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("bau_cua_place_bet", BauCuaPlaceBetRPC); err != nil {
+		return err
+	}
 
 	err = RegisterAuthHooks(initializer)
 	if err != nil {
