@@ -568,7 +568,7 @@ func readAllBauCuaBets(ctx context.Context, nk runtime.NakamaModule, roundID str
 	prefix := strings.TrimSpace(roundID) + ":"
 
 	for {
-		objects, nextCursor, err := nk.StorageList(ctx, "", bauCuaBetsCollection, "", 100, cursor)
+		objects, nextCursor, err := nk.StorageList(ctx, "", "", bauCuaBetsCollection, 100, cursor)
 		if err != nil {
 			return bauCuaRoundBetsRecord{}, err
 		}
