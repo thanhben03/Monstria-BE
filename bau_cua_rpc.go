@@ -828,6 +828,10 @@ func buildBauCuaBetItems(inv PlayerInventory, definitions []ShopItemDefinition) 
 	addStacks := func(stacks []PotStack) {
 		for _, stack := range stacks {
 			itemID := strings.TrimSpace(stack.ItemID)
+			// nếu itemID bắt đầu bằng flower_ thì bỏ qua
+			if strings.HasPrefix(itemID, "flower_") {
+				continue
+			}
 			if itemID == "" || stack.Quantity <= 0 {
 				continue
 			}
