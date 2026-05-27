@@ -48,8 +48,8 @@ type placePotPayload struct {
 
 // placePotResponse matches client JsonUtility nested fields.
 type placePotResponse struct {
-	Inventory PlayerInventoryResponse `json:"inventory"`
-	Garden    PlayerGarden            `json:"garden"`
+	Inventory PlayerInventory `json:"inventory"`
+	Garden    PlayerGarden    `json:"garden"`
 }
 
 // PlacePotOnSlotRPC consumes one pot from inventory and records placement. Atomic write of inventory + garden.
@@ -87,18 +87,11 @@ func PlacePotOnSlotRPC(
 	for _, o := range objs {
 		switch o.GetKey() {
 		case playerInventoryKey:
-			if err := json.Unmarshal([]byte(o.GetValue()), &inv); err != nil {
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
 				return "", runtime.NewError("corrupt inventory", 13)
 			}
-			if inv.Pots == nil {
-				inv.Pots = []PotStack{}
-			}
-			if inv.Seeds == nil {
-				inv.Seeds = []PotStack{}
-			}
-			if inv.Items == nil {
-				inv.Items = []PotStack{}
-			}
+			inv = decoded
 			invVer = o.GetVersion()
 		case playerGardenKey:
 			if err := json.Unmarshal([]byte(o.GetValue()), &garden); err != nil {
@@ -162,7 +155,7 @@ func PlacePotOnSlotRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := placePotResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy}
+	out := placePotResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
@@ -176,8 +169,8 @@ type plantSeedPayload struct {
 }
 
 type plantSeedResponse struct {
-	Inventory PlayerInventoryResponse `json:"inventory"`
-	Garden    PlayerGarden            `json:"garden"`
+	Inventory PlayerInventory `json:"inventory"`
+	Garden    PlayerGarden    `json:"garden"`
 }
 
 // PlantSeedInPotRPC consumes one seed from inventory and records plant on an existing pot (no pot consumed).
@@ -215,18 +208,11 @@ func PlantSeedInPotRPC(
 	for _, o := range objs {
 		switch o.GetKey() {
 		case playerInventoryKey:
-			if err := json.Unmarshal([]byte(o.GetValue()), &inv); err != nil {
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
 				return "", runtime.NewError("corrupt inventory", 13)
 			}
-			if inv.Pots == nil {
-				inv.Pots = []PotStack{}
-			}
-			if inv.Seeds == nil {
-				inv.Seeds = []PotStack{}
-			}
-			if inv.Items == nil {
-				inv.Items = []PotStack{}
-			}
+			inv = decoded
 			invVer = o.GetVersion()
 		case playerGardenKey:
 			if err := json.Unmarshal([]byte(o.GetValue()), &garden); err != nil {
@@ -291,7 +277,7 @@ func PlantSeedInPotRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := plantSeedResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy}
+	out := plantSeedResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
@@ -377,9 +363,9 @@ type harvestReward struct {
 }
 
 type harvestPlantResponse struct {
-	Inventory PlayerInventoryResponse `json:"inventory"`
-	Garden    PlayerGarden            `json:"garden"`
-	Reward    harvestReward           `json:"reward"`
+	Inventory PlayerInventory `json:"inventory"`
+	Garden    PlayerGarden    `json:"garden"`
+	Reward    harvestReward   `json:"reward"`
 }
 
 type destroyDeadPlantPayload struct {
@@ -396,8 +382,8 @@ type treatPlantDiseasePayload struct {
 }
 
 type treatPlantDiseaseResponse struct {
-	Inventory PlayerInventoryResponse `json:"inventory"`
-	Garden    PlayerGarden            `json:"garden"`
+	Inventory PlayerInventory `json:"inventory"`
+	Garden    PlayerGarden    `json:"garden"`
 }
 
 // TreatPlantDiseaseRPC consumes a treatment item, clears plant disease, and adds protection time.
@@ -435,18 +421,11 @@ func TreatPlantDiseaseRPC(
 	for _, o := range objs {
 		switch o.GetKey() {
 		case playerInventoryKey:
-			if err := json.Unmarshal([]byte(o.GetValue()), &inv); err != nil {
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
 				return "", runtime.NewError("corrupt inventory", 13)
 			}
-			if inv.Pots == nil {
-				inv.Pots = []PotStack{}
-			}
-			if inv.Seeds == nil {
-				inv.Seeds = []PotStack{}
-			}
-			if inv.Items == nil {
-				inv.Items = []PotStack{}
-			}
+			inv = decoded
 			invVer = o.GetVersion()
 		case playerGardenKey:
 			if err := json.Unmarshal([]byte(o.GetValue()), &garden); err != nil {
@@ -510,7 +489,7 @@ func TreatPlantDiseaseRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := treatPlantDiseaseResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy}
+	out := treatPlantDiseaseResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
@@ -553,18 +532,11 @@ func HarvestPlantInPotRPC(
 	for _, o := range objs {
 		switch o.GetKey() {
 		case playerInventoryKey:
-			if err := json.Unmarshal([]byte(o.GetValue()), &inv); err != nil {
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
 				return "", runtime.NewError("corrupt inventory", 13)
 			}
-			if inv.Pots == nil {
-				inv.Pots = []PotStack{}
-			}
-			if inv.Seeds == nil {
-				inv.Seeds = []PotStack{}
-			}
-			if inv.Items == nil {
-				inv.Items = []PotStack{}
-			}
+			inv = decoded
 			invVer = o.GetVersion()
 		case playerGardenKey:
 			if err := json.Unmarshal([]byte(o.GetValue()), &garden); err != nil {
@@ -627,7 +599,7 @@ func HarvestPlantInPotRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := harvestPlantResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy, Reward: reward}
+	out := harvestPlantResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy, Reward: reward}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err

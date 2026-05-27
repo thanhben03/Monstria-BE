@@ -13,40 +13,51 @@ const (
 	playerInventoryKey = "inventory"
 )
 
-// PotStack is one stack of pots in inventory (matches client JSON).
-type PotStack struct {
+// InventoryItemStack is one stack in the common phase-5 inventory contract.
+type InventoryItemStack struct {
 	ItemID   string `json:"itemId"`
 	Quantity int    `json:"quantity"`
 }
 
+type legacyPlayerInventory struct {
+	Pots  []InventoryItemStack `json:"pots"`
+	Seeds []InventoryItemStack `json:"seeds"`
+	Items []InventoryItemStack `json:"items"`
+}
+
 // PlayerInventory is persisted under player_state / inventory.
 type PlayerInventory struct {
-	Pots  []PotStack `json:"pots"`
-	Seeds []PotStack `json:"seeds"`
-	Items []PotStack `json:"items"`
+	Items []InventoryItemStack `json:"items"`
 }
 
-// PlayerInventoryResponse is the client-facing phase-5 inventory contract.
-// Storage stays bucketed for now; responses are flattened to items[].
-type PlayerInventoryResponse struct {
-	Items []PotStack `json:"items"`
-}
-
-func NewPlayerInventoryResponse(inv PlayerInventory) PlayerInventoryResponse {
-	items := make([]PotStack, 0, len(inv.Pots)+len(inv.Seeds)+len(inv.Items))
-	items = append(items, inv.Pots...)
-	items = append(items, inv.Seeds...)
-	items = append(items, inv.Items...)
-
-	normalized, err := normalizePots(items)
+func normalizePlayerInventory(inv PlayerInventory) PlayerInventory {
+	items, err := normalizeInventoryStacks(inv.Items)
 	if err != nil {
-		normalized = []PotStack{}
+		items = []InventoryItemStack{}
 	}
-	return PlayerInventoryResponse{Items: normalized}
+	return PlayerInventory{Items: items}
+}
+
+func decodePlayerInventory(raw []byte) (PlayerInventory, error) {
+	var legacy legacyPlayerInventory
+	if err := json.Unmarshal(raw, &legacy); err != nil {
+		return PlayerInventory{}, err
+	}
+
+	items := make([]InventoryItemStack, 0, len(legacy.Pots)+len(legacy.Seeds)+len(legacy.Items))
+	items = append(items, legacy.Pots...)
+	items = append(items, legacy.Seeds...)
+	items = append(items, legacy.Items...)
+
+	normalized, err := normalizeInventoryStacks(items)
+	if err != nil {
+		return PlayerInventory{}, err
+	}
+	return PlayerInventory{Items: normalized}, nil
 }
 
 func defaultPlayerInventory() PlayerInventory {
-	return PlayerInventory{Pots: []PotStack{}, Seeds: []PotStack{}, Items: []PotStack{}}
+	return PlayerInventory{Items: []InventoryItemStack{}}
 }
 
 func initPlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID string) error {
@@ -85,23 +96,18 @@ func readPlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID st
 		return defaultPlayerInventory(), "", nil
 	}
 
-	var inv PlayerInventory
-	if err := json.Unmarshal([]byte(objs[0].GetValue()), &inv); err != nil {
+	inv, err := decodePlayerInventory([]byte(objs[0].GetValue()))
+	if err != nil {
 		return PlayerInventory{}, "", err
 	}
-	if inv.Pots == nil {
-		inv.Pots = []PotStack{}
-	}
-	if inv.Seeds == nil {
-		inv.Seeds = []PotStack{}
-	}
 	if inv.Items == nil {
-		inv.Items = []PotStack{}
+		inv.Items = []InventoryItemStack{}
 	}
 	return inv, objs[0].GetVersion(), nil
 }
 
 func writePlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID string, version string, inv PlayerInventory) error {
+	inv = normalizePlayerInventory(inv)
 	raw, err := json.Marshal(inv)
 	if err != nil {
 		return err
@@ -121,10 +127,10 @@ func writePlayerInventory(ctx context.Context, nk runtime.NakamaModule, userID s
 	return err
 }
 
-// normalizePots merges duplicate itemId, drops invalid rows, sorts by itemId for stable JSON.
-func normalizePots(pots []PotStack) ([]PotStack, error) {
+// normalizeInventoryStacks merges duplicate itemId, drops invalid rows, sorts by itemId for stable JSON.
+func normalizeInventoryStacks(stacks []InventoryItemStack) ([]InventoryItemStack, error) {
 	byID := make(map[string]int)
-	for _, p := range pots {
+	for _, p := range stacks {
 		id := strings.TrimSpace(p.ItemID)
 		if id == "" {
 			continue
@@ -137,85 +143,59 @@ func normalizePots(pots []PotStack) ([]PotStack, error) {
 		}
 		byID[id] += p.Quantity
 	}
-	out := make([]PotStack, 0, len(byID))
+	out := make([]InventoryItemStack, 0, len(byID))
 	for id, q := range byID {
-		out = append(out, PotStack{ItemID: id, Quantity: q})
+		out = append(out, InventoryItemStack{ItemID: id, Quantity: q})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ItemID < out[j].ItemID })
 	return out, nil
 }
 
-// ConsumeOnePot removes one unit of itemID from inv (mutates inv).
-func ConsumeOnePot(inv *PlayerInventory, itemID string) error {
+func consumeInventoryItem(inv *PlayerInventory, itemID string, quantity int, emptyMessage string) error {
 	id := strings.TrimSpace(itemID)
 	if id == "" {
 		return runtime.NewError("itemId is required", 3)
 	}
-	for i := 0; i < len(inv.Pots); i++ {
-		if inv.Pots[i].ItemID != id {
-			continue
-		}
-		if inv.Pots[i].Quantity < 1 {
-			return runtime.NewError("not enough pots in inventory", 3)
-		}
-		inv.Pots[i].Quantity--
-		if inv.Pots[i].Quantity == 0 {
-			inv.Pots = append(inv.Pots[:i], inv.Pots[i+1:]...)
-		}
-		sort.Slice(inv.Pots, func(a, b int) bool { return inv.Pots[a].ItemID < inv.Pots[b].ItemID })
-		return nil
-	}
-	return runtime.NewError("not enough pots in inventory", 3)
-}
-
-// ConsumeOneSeed removes one unit of seed itemID from inv.Seeds (mutates inv).
-func ConsumeOneSeed(inv *PlayerInventory, itemID string) error {
-	id := strings.TrimSpace(itemID)
-	if id == "" {
-		return runtime.NewError("seedItemId is required", 3)
-	}
-	for i := 0; i < len(inv.Seeds); i++ {
-		if inv.Seeds[i].ItemID != id {
-			continue
-		}
-		if inv.Seeds[i].Quantity < 1 {
-			return runtime.NewError("not enough seeds in inventory", 3)
-		}
-		inv.Seeds[i].Quantity--
-		if inv.Seeds[i].Quantity == 0 {
-			inv.Seeds = append(inv.Seeds[:i], inv.Seeds[i+1:]...)
-		}
-		sort.Slice(inv.Seeds, func(a, b int) bool { return inv.Seeds[a].ItemID < inv.Seeds[b].ItemID })
-		return nil
-	}
-	return runtime.NewError("not enough seeds in inventory", 3)
-}
-
-// ConsumeOneItem removes one unit of itemID from inv.Items (mutates inv).
-func ConsumeOneItem(inv *PlayerInventory, itemID string) error {
-	id := strings.TrimSpace(itemID)
-	if id == "" {
-		return runtime.NewError("itemId is required", 3)
+	if quantity < 1 {
+		return runtime.NewError("quantity must be positive", 3)
 	}
 	for i := 0; i < len(inv.Items); i++ {
 		if inv.Items[i].ItemID != id {
 			continue
 		}
-		if inv.Items[i].Quantity < 1 {
-			return runtime.NewError("not enough items in inventory", 3)
+		if inv.Items[i].Quantity < quantity {
+			return runtime.NewError(emptyMessage, 3)
 		}
-		inv.Items[i].Quantity--
+		inv.Items[i].Quantity -= quantity
 		if inv.Items[i].Quantity == 0 {
 			inv.Items = append(inv.Items[:i], inv.Items[i+1:]...)
 		}
 		sort.Slice(inv.Items, func(a, b int) bool { return inv.Items[a].ItemID < inv.Items[b].ItemID })
 		return nil
 	}
-	return runtime.NewError("not enough items in inventory", 3)
+	return runtime.NewError(emptyMessage, 3)
 }
 
-// AddItem adds quantity units of itemID into inv.Items (mutates inv).
-func AddItem(inv *PlayerInventory, itemID string, quantity int) error {
+// ConsumeOnePot removes one unit of a pot item from the common inventory (mutates inv).
+func ConsumeOnePot(inv *PlayerInventory, itemID string) error {
+	return consumeInventoryItem(inv, itemID, 1, "not enough pots in inventory")
+}
+
+// ConsumeOneSeed removes one unit of a seed item from the common inventory (mutates inv).
+func ConsumeOneSeed(inv *PlayerInventory, itemID string) error {
+	if strings.TrimSpace(itemID) == "" {
+		return runtime.NewError("seedItemId is required", 3)
+	}
+	return consumeInventoryItem(inv, itemID, 1, "not enough seeds in inventory")
+}
+
+// ConsumeOneItem removes one unit of itemID from the common inventory (mutates inv).
+func ConsumeOneItem(inv *PlayerInventory, itemID string) error {
+	return consumeInventoryItem(inv, itemID, 1, "not enough items in inventory")
+}
+
+// AddInventoryItem adds quantity units of itemID into the common inventory (mutates inv).
+func AddInventoryItem(inv *PlayerInventory, itemID string, quantity int) error {
 	id := strings.TrimSpace(itemID)
 	if id == "" {
 		return runtime.NewError("itemId is required", 3)
@@ -224,8 +204,8 @@ func AddItem(inv *PlayerInventory, itemID string, quantity int) error {
 		return runtime.NewError("quantity must be positive", 3)
 	}
 
-	inv.Items = append(inv.Items, PotStack{ItemID: id, Quantity: quantity})
-	items, err := normalizePots(inv.Items)
+	inv.Items = append(inv.Items, InventoryItemStack{ItemID: id, Quantity: quantity})
+	items, err := normalizeInventoryStacks(inv.Items)
 	if err != nil {
 		return err
 	}
@@ -233,40 +213,17 @@ func AddItem(inv *PlayerInventory, itemID string, quantity int) error {
 	return nil
 }
 
-// AddPot adds quantity units of itemID into inv.Pots (mutates inv).
-func AddPot(inv *PlayerInventory, itemID string, quantity int) error {
-	id := strings.TrimSpace(itemID)
-	if id == "" {
-		return runtime.NewError("itemId is required", 3)
-	}
-	if quantity < 1 {
-		return runtime.NewError("quantity must be positive", 3)
-	}
-
-	inv.Pots = append(inv.Pots, PotStack{ItemID: id, Quantity: quantity})
-	pots, err := normalizePots(inv.Pots)
-	if err != nil {
-		return err
-	}
-	inv.Pots = pots
-	return nil
+// AddItem adds quantity units of itemID into the common inventory (mutates inv).
+func AddItem(inv *PlayerInventory, itemID string, quantity int) error {
+	return AddInventoryItem(inv, itemID, quantity)
 }
 
-// AddSeed adds quantity units of itemID into inv.Seeds (mutates inv).
-func AddSeed(inv *PlayerInventory, itemID string, quantity int) error {
-	id := strings.TrimSpace(itemID)
-	if id == "" {
-		return runtime.NewError("itemId is required", 3)
-	}
-	if quantity < 1 {
-		return runtime.NewError("quantity must be positive", 3)
-	}
+// AddPot adds quantity units of a pot item into the common inventory (mutates inv).
+func AddPot(inv *PlayerInventory, itemID string, quantity int) error {
+	return AddInventoryItem(inv, itemID, quantity)
+}
 
-	inv.Seeds = append(inv.Seeds, PotStack{ItemID: id, Quantity: quantity})
-	seeds, err := normalizePots(inv.Seeds)
-	if err != nil {
-		return err
-	}
-	inv.Seeds = seeds
-	return nil
+// AddSeed adds quantity units of a seed item into the common inventory (mutates inv).
+func AddSeed(inv *PlayerInventory, itemID string, quantity int) error {
+	return AddInventoryItem(inv, itemID, quantity)
 }

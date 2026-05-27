@@ -27,7 +27,7 @@ func GetPlayerInventoryRPC(
 		return "", runtime.NewError("failed to load inventory", 13)
 	}
 
-	raw, err := json.Marshal(NewPlayerInventoryResponse(inv))
+	raw, err := json.Marshal(inv)
 	if err != nil {
 		return "", err
 	}
@@ -35,12 +35,12 @@ func GetPlayerInventoryRPC(
 }
 
 type setInventoryPayload struct {
-	Pots  []PotStack `json:"pots"`
-	Seeds []PotStack `json:"seeds"`
-	Items []PotStack `json:"items"`
+	Pots  []InventoryItemStack `json:"pots"`
+	Seeds []InventoryItemStack `json:"seeds"`
+	Items []InventoryItemStack `json:"items"`
 }
 
-// SetPlayerInventoryRPC replaces pots from payload (same shape as example). Merges duplicate itemId server-side.
+// SetPlayerInventoryRPC replaces inventory from payload. It accepts legacy buckets for dev tools but persists items[].
 func SetPlayerInventoryRPC(
 	ctx context.Context,
 	logger runtime.Logger,
@@ -60,20 +60,16 @@ func SetPlayerInventoryRPC(
 		}
 	}
 
-	pots, err := normalizePots(body.Pots)
-	if err != nil {
-		return "", err
-	}
-	seeds, err := normalizePots(body.Seeds)
-	if err != nil {
-		return "", err
-	}
-	items, err := normalizePots(body.Items)
+	allItems := make([]InventoryItemStack, 0, len(body.Pots)+len(body.Seeds)+len(body.Items))
+	allItems = append(allItems, body.Pots...)
+	allItems = append(allItems, body.Seeds...)
+	allItems = append(allItems, body.Items...)
+	items, err := normalizeInventoryStacks(allItems)
 	if err != nil {
 		return "", err
 	}
 
-	inv := PlayerInventory{Pots: pots, Seeds: seeds, Items: items}
+	inv := PlayerInventory{Items: items}
 
 	_, version, err := readPlayerInventory(ctx, nk, userID)
 	if err != nil {
@@ -86,7 +82,7 @@ func SetPlayerInventoryRPC(
 		return "", runtime.NewError("failed to save inventory", 13)
 	}
 
-	raw, err := json.Marshal(NewPlayerInventoryResponse(inv))
+	raw, err := json.Marshal(inv)
 	if err != nil {
 		return "", err
 	}

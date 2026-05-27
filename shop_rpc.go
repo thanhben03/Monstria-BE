@@ -41,9 +41,9 @@ type shopPurchaseResult struct {
 }
 
 type purchaseShopItemResponse struct {
-	Resources PlayerResources         `json:"resources"`
-	Inventory PlayerInventoryResponse `json:"inventory"`
-	Purchase  shopPurchaseResult      `json:"purchase"`
+	Resources PlayerResources    `json:"resources"`
+	Inventory PlayerInventory    `json:"inventory"`
+	Purchase  shopPurchaseResult `json:"purchase"`
 }
 
 func GetShopCatalogRPC(
@@ -194,18 +194,11 @@ func PurchaseShopItemRPC(
 			resources = normalizePlayerResources(resources)
 			resourcesVer = o.GetVersion()
 		case playerInventoryKey:
-			if err := json.Unmarshal([]byte(o.GetValue()), &inv); err != nil {
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
 				return "", runtime.NewError("corrupt inventory", 13)
 			}
-			if inv.Pots == nil {
-				inv.Pots = []PotStack{}
-			}
-			if inv.Seeds == nil {
-				inv.Seeds = []PotStack{}
-			}
-			if inv.Items == nil {
-				inv.Items = []PotStack{}
-			}
+			inv = decoded
 			invVer = o.GetVersion()
 		}
 	}
@@ -269,7 +262,7 @@ func PurchaseShopItemRPC(
 
 	out := purchaseShopItemResponse{
 		Resources: resourcesCopy,
-		Inventory: NewPlayerInventoryResponse(invCopy),
+		Inventory: normalizePlayerInventory(invCopy),
 		Purchase: shopPurchaseResult{
 			ShopItemID:       def.ShopItemID,
 			GrantType:        def.GrantType,

@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestNormalizePots_mergeAndSort(t *testing.T) {
-	got, err := normalizePots([]PotStack{
+func TestNormalizeInventoryStacks_mergeAndSort(t *testing.T) {
+	got, err := normalizeInventoryStacks([]InventoryItemStack{
 		{ItemID: "pot_gold", Quantity: 1},
 		{ItemID: "pot_wood", Quantity: 2},
 		{ItemID: "pot_wood", Quantity: 3},
@@ -14,7 +14,7 @@ func TestNormalizePots_mergeAndSort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []PotStack{
+	want := []InventoryItemStack{
 		{ItemID: "pot_gold", Quantity: 1},
 		{ItemID: "pot_wood", Quantity: 5},
 	}
@@ -24,17 +24,17 @@ func TestNormalizePots_mergeAndSort(t *testing.T) {
 }
 
 func TestConsumeOneSeed(t *testing.T) {
-	inv := PlayerInventory{Seeds: []PotStack{{ItemID: "seed_a", Quantity: 1}}}
+	inv := PlayerInventory{Items: []InventoryItemStack{{ItemID: "seed_a", Quantity: 1}}}
 	if err := ConsumeOneSeed(&inv, "seed_a"); err != nil {
 		t.Fatal(err)
 	}
-	if len(inv.Seeds) != 0 {
-		t.Fatalf("got %#v", inv.Seeds)
+	if len(inv.Items) != 0 {
+		t.Fatalf("got %#v", inv.Items)
 	}
 }
 
 func TestConsumeOnePot(t *testing.T) {
-	inv := PlayerInventory{Pots: []PotStack{
+	inv := PlayerInventory{Items: []InventoryItemStack{
 		{ItemID: "pot_wood", Quantity: 2},
 		{ItemID: "pot_gold", Quantity: 1},
 	}}
@@ -50,7 +50,7 @@ func TestConsumeOnePot(t *testing.T) {
 }
 
 func TestConsumeOneItem(t *testing.T) {
-	inv := PlayerInventory{Items: []PotStack{
+	inv := PlayerInventory{Items: []InventoryItemStack{
 		{ItemID: "item_pesticide", Quantity: 2},
 		{ItemID: "flower_rose", Quantity: 1},
 	}}
@@ -66,7 +66,7 @@ func TestConsumeOneItem(t *testing.T) {
 }
 
 func TestAddItemMergeAndSort(t *testing.T) {
-	inv := PlayerInventory{Items: []PotStack{{ItemID: "flower_sunflower", Quantity: 1}}}
+	inv := PlayerInventory{Items: []InventoryItemStack{{ItemID: "flower_sunflower", Quantity: 1}}}
 	if err := AddItem(&inv, "flower_rose", 2); err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestAddItemMergeAndSort(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := []PotStack{
+	want := []InventoryItemStack{
 		{ItemID: "flower_rose", Quantity: 5},
 		{ItemID: "flower_sunflower", Quantity: 1},
 	}
@@ -90,20 +90,38 @@ func TestDefaultInventoryHasItems(t *testing.T) {
 	}
 }
 
-func TestNewPlayerInventoryResponseFlattensBuckets(t *testing.T) {
-	inv := PlayerInventory{
-		Pots:  []PotStack{{ItemID: "pot_wood", Quantity: 2}},
-		Seeds: []PotStack{{ItemID: "seed_rose", Quantity: 3}},
-		Items: []PotStack{
-			{ItemID: "item_pesticide", Quantity: 1},
-			{ItemID: "seed_rose", Quantity: 4},
-		},
+func TestDecodePlayerInventoryFlattensLegacyBuckets(t *testing.T) {
+	inv, err := decodePlayerInventory([]byte(`{
+		"pots": [{"itemId": "pot_wood", "quantity": 2}],
+		"seeds": [{"itemId": "seed_rose", "quantity": 3}],
+		"items": [
+			{"itemId": "item_pesticide", "quantity": 1},
+			{"itemId": "seed_rose", "quantity": 4}
+		]
+	}`))
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	got := NewPlayerInventoryResponse(inv)
-	want := []PotStack{
+	want := []InventoryItemStack{
 		{ItemID: "item_pesticide", Quantity: 1},
 		{ItemID: "pot_wood", Quantity: 2},
+		{ItemID: "seed_rose", Quantity: 7},
+	}
+	if !reflect.DeepEqual(inv.Items, want) {
+		t.Fatalf("got %#v want %#v", inv.Items, want)
+	}
+}
+
+func TestNormalizePlayerInventoryKeepsCommonItemsOnly(t *testing.T) {
+	got := normalizePlayerInventory(PlayerInventory{
+		Items: []InventoryItemStack{
+			{ItemID: "item_pesticide", Quantity: 1},
+			{ItemID: "seed_rose", Quantity: 4},
+			{ItemID: "seed_rose", Quantity: 3},
+		},
+	})
+	want := []InventoryItemStack{
+		{ItemID: "item_pesticide", Quantity: 1},
 		{ItemID: "seed_rose", Quantity: 7},
 	}
 	if !reflect.DeepEqual(got.Items, want) {
@@ -111,8 +129,8 @@ func TestNewPlayerInventoryResponseFlattensBuckets(t *testing.T) {
 	}
 }
 
-func TestNormalizePots_dropInvalid(t *testing.T) {
-	got, err := normalizePots([]PotStack{
+func TestNormalizeInventoryStacks_dropInvalid(t *testing.T) {
+	got, err := normalizeInventoryStacks([]InventoryItemStack{
 		{ItemID: "", Quantity: 1},
 		{ItemID: "pot_wood", Quantity: 0},
 		{ItemID: "  x  ", Quantity: 2},
@@ -120,7 +138,7 @@ func TestNormalizePots_dropInvalid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []PotStack{{ItemID: "x", Quantity: 2}}
+	want := []InventoryItemStack{{ItemID: "x", Quantity: 2}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %#v want %#v", got, want)
 	}

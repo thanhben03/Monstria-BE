@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestParseShopItemDefinitions(t *testing.T) {
 	raw := []byte(`{
@@ -363,13 +366,12 @@ func TestGrantShopItem(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(inv.Pots) != 1 || inv.Pots[0].Quantity != 2 {
-		t.Fatalf("unexpected pots %#v", inv.Pots)
+	wantItems := []InventoryItemStack{
+		{ItemID: "flower_rose", Quantity: 1},
+		{ItemID: "pot_wood", Quantity: 2},
+		{ItemID: "seed_rose", Quantity: 5},
 	}
-	if len(inv.Seeds) != 1 || inv.Seeds[0].Quantity != 5 {
-		t.Fatalf("unexpected seeds %#v", inv.Seeds)
-	}
-	if len(inv.Items) != 1 || inv.Items[0].Quantity != 1 {
+	if !reflect.DeepEqual(inv.Items, wantItems) {
 		t.Fatalf("unexpected items %#v", inv.Items)
 	}
 }
@@ -380,8 +382,8 @@ func TestGrantShopItemQuantity(t *testing.T) {
 	if err := grantShopItemQuantity(&inv, ShopItemDefinition{GrantType: shopGrantTypeSeed, GrantItemID: "seed_rose", Quantity: 5}, 15); err != nil {
 		t.Fatal(err)
 	}
-	if len(inv.Seeds) != 1 || inv.Seeds[0].ItemID != "seed_rose" || inv.Seeds[0].Quantity != 15 {
-		t.Fatalf("unexpected seeds %#v", inv.Seeds)
+	if len(inv.Items) != 1 || inv.Items[0].ItemID != "seed_rose" || inv.Items[0].Quantity != 15 {
+		t.Fatalf("unexpected items %#v", inv.Items)
 	}
 	if err := grantShopItemQuantity(&inv, ShopItemDefinition{GrantType: shopGrantTypeSeed, GrantItemID: "seed_rose", Quantity: 5}, 0); err == nil {
 		t.Fatal("expected zero quantity to be rejected")

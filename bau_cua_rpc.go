@@ -75,7 +75,7 @@ type bauCuaResultDTO struct {
 
 type bauCuaPlaceBetResponse struct {
 	State     bauCuaRoundStateResponse `json:"state"`
-	Inventory PlayerInventoryResponse  `json:"inventory"`
+	Inventory PlayerInventory          `json:"inventory"`
 }
 
 type bauCuaRoundRecord struct {
@@ -251,7 +251,7 @@ func BauCuaPlaceBetRPC(
 	}
 	response := bauCuaPlaceBetResponse{
 		State:     buildBauCuaStateResponse(round, bets, userID, buildBauCuaBetItems(inv, definitions)),
-		Inventory: NewPlayerInventoryResponse(inv),
+		Inventory: normalizePlayerInventory(inv),
 	}
 
 	raw, err := json.Marshal(response)
@@ -742,19 +742,13 @@ func addBauCuaUserBet(bet *bauCuaUserBetRecord, slotID string, symbolID string, 
 }
 
 func consumeBauCuaBetItem(inv *PlayerInventory, itemID string, quantity int) (string, error) {
-	if consumeFromBauCuaStacks(&inv.Pots, itemID, quantity) {
-		return bauCuaItemTypePot, nil
-	}
-	if consumeFromBauCuaStacks(&inv.Seeds, itemID, quantity) {
-		return bauCuaItemTypeSeed, nil
-	}
 	if consumeFromBauCuaStacks(&inv.Items, itemID, quantity) {
 		return bauCuaItemTypeItem, nil
 	}
 	return "", runtime.NewError("not enough item in inventory", 9)
 }
 
-func consumeFromBauCuaStacks(stacks *[]PotStack, itemID string, quantity int) bool {
+func consumeFromBauCuaStacks(stacks *[]InventoryItemStack, itemID string, quantity int) bool {
 	for i := range *stacks {
 		if (*stacks)[i].ItemID != itemID || (*stacks)[i].Quantity < quantity {
 			continue
@@ -825,13 +819,9 @@ func buildBauCuaBetItems(inv PlayerInventory, definitions []ShopItemDefinition) 
 	displayNames := buildBauCuaDisplayNameByItemID(definitions)
 	byID := make(map[string]int)
 
-	addStacks := func(stacks []PotStack) {
+	addStacks := func(stacks []InventoryItemStack) {
 		for _, stack := range stacks {
 			itemID := strings.TrimSpace(stack.ItemID)
-			// nếu itemID bắt đầu bằng flower_ thì bỏ qua
-			if strings.HasPrefix(itemID, "flower_") {
-				continue
-			}
 			if itemID == "" || stack.Quantity <= 0 {
 				continue
 			}
@@ -839,8 +829,6 @@ func buildBauCuaBetItems(inv PlayerInventory, definitions []ShopItemDefinition) 
 		}
 	}
 
-	addStacks(inv.Pots)
-	addStacks(inv.Seeds)
 	addStacks(inv.Items)
 
 	ids := make([]string, 0, len(byID))

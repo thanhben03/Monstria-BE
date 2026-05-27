@@ -7,9 +7,9 @@ import (
 
 func TestBuildBauCuaBetItemsMergesInventoryStacks(t *testing.T) {
 	inv := PlayerInventory{
-		Pots:  []PotStack{{ItemID: "pot_wood", Quantity: 2}},
-		Seeds: []PotStack{{ItemID: "seed_rose", Quantity: 3}},
-		Items: []PotStack{
+		Items: []InventoryItemStack{
+			{ItemID: "pot_wood", Quantity: 2},
+			{ItemID: "seed_rose", Quantity: 3},
 			{ItemID: "flower_rose", Quantity: 1},
 			{ItemID: "seed_rose", Quantity: 4},
 		},
