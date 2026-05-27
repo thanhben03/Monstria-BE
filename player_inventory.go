@@ -26,6 +26,25 @@ type PlayerInventory struct {
 	Items []PotStack `json:"items"`
 }
 
+// PlayerInventoryResponse is the client-facing phase-5 inventory contract.
+// Storage stays bucketed for now; responses are flattened to items[].
+type PlayerInventoryResponse struct {
+	Items []PotStack `json:"items"`
+}
+
+func NewPlayerInventoryResponse(inv PlayerInventory) PlayerInventoryResponse {
+	items := make([]PotStack, 0, len(inv.Pots)+len(inv.Seeds)+len(inv.Items))
+	items = append(items, inv.Pots...)
+	items = append(items, inv.Seeds...)
+	items = append(items, inv.Items...)
+
+	normalized, err := normalizePots(items)
+	if err != nil {
+		normalized = []PotStack{}
+	}
+	return PlayerInventoryResponse{Items: normalized}
+}
+
 func defaultPlayerInventory() PlayerInventory {
 	return PlayerInventory{Pots: []PotStack{}, Seeds: []PotStack{}, Items: []PotStack{}}
 }

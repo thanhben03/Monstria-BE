@@ -90,6 +90,27 @@ func TestDefaultInventoryHasItems(t *testing.T) {
 	}
 }
 
+func TestNewPlayerInventoryResponseFlattensBuckets(t *testing.T) {
+	inv := PlayerInventory{
+		Pots:  []PotStack{{ItemID: "pot_wood", Quantity: 2}},
+		Seeds: []PotStack{{ItemID: "seed_rose", Quantity: 3}},
+		Items: []PotStack{
+			{ItemID: "item_pesticide", Quantity: 1},
+			{ItemID: "seed_rose", Quantity: 4},
+		},
+	}
+
+	got := NewPlayerInventoryResponse(inv)
+	want := []PotStack{
+		{ItemID: "item_pesticide", Quantity: 1},
+		{ItemID: "pot_wood", Quantity: 2},
+		{ItemID: "seed_rose", Quantity: 7},
+	}
+	if !reflect.DeepEqual(got.Items, want) {
+		t.Fatalf("got %#v want %#v", got.Items, want)
+	}
+}
+
 func TestNormalizePots_dropInvalid(t *testing.T) {
 	got, err := normalizePots([]PotStack{
 		{ItemID: "", Quantity: 1},

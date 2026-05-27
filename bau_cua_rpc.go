@@ -75,7 +75,7 @@ type bauCuaResultDTO struct {
 
 type bauCuaPlaceBetResponse struct {
 	State     bauCuaRoundStateResponse `json:"state"`
-	Inventory PlayerInventory          `json:"inventory"`
+	Inventory PlayerInventoryResponse  `json:"inventory"`
 }
 
 type bauCuaRoundRecord struct {
@@ -251,7 +251,7 @@ func BauCuaPlaceBetRPC(
 	}
 	response := bauCuaPlaceBetResponse{
 		State:     buildBauCuaStateResponse(round, bets, userID, buildBauCuaBetItems(inv, definitions)),
-		Inventory: inv,
+		Inventory: NewPlayerInventoryResponse(inv),
 	}
 
 	raw, err := json.Marshal(response)

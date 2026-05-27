@@ -41,9 +41,9 @@ type shopPurchaseResult struct {
 }
 
 type purchaseShopItemResponse struct {
-	Resources PlayerResources    `json:"resources"`
-	Inventory PlayerInventory    `json:"inventory"`
-	Purchase  shopPurchaseResult `json:"purchase"`
+	Resources PlayerResources         `json:"resources"`
+	Inventory PlayerInventoryResponse `json:"inventory"`
+	Purchase  shopPurchaseResult      `json:"purchase"`
 }
 
 func GetShopCatalogRPC(
@@ -269,7 +269,7 @@ func PurchaseShopItemRPC(
 
 	out := purchaseShopItemResponse{
 		Resources: resourcesCopy,
-		Inventory: invCopy,
+		Inventory: NewPlayerInventoryResponse(invCopy),
 		Purchase: shopPurchaseResult{
 			ShopItemID:       def.ShopItemID,
 			GrantType:        def.GrantType,

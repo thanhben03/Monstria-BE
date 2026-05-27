@@ -8,7 +8,7 @@ import (
 	"github.com/heroiclabs/nakama-common/runtime"
 )
 
-// GetPlayerInventoryRPC returns {"pots":[...],"seeds":[...],"items":[...]}.
+// GetPlayerInventoryRPC returns {"items":[...]}.
 func GetPlayerInventoryRPC(
 	ctx context.Context,
 	logger runtime.Logger,
@@ -27,7 +27,7 @@ func GetPlayerInventoryRPC(
 		return "", runtime.NewError("failed to load inventory", 13)
 	}
 
-	raw, err := json.Marshal(inv)
+	raw, err := json.Marshal(NewPlayerInventoryResponse(inv))
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +86,7 @@ func SetPlayerInventoryRPC(
 		return "", runtime.NewError("failed to save inventory", 13)
 	}
 
-	raw, err := json.Marshal(inv)
+	raw, err := json.Marshal(NewPlayerInventoryResponse(inv))
 	if err != nil {
 		return "", err
 	}

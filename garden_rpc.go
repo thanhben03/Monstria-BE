@@ -48,8 +48,8 @@ type placePotPayload struct {
 
 // placePotResponse matches client JsonUtility nested fields.
 type placePotResponse struct {
-	Inventory PlayerInventory `json:"inventory"`
-	Garden    PlayerGarden    `json:"garden"`
+	Inventory PlayerInventoryResponse `json:"inventory"`
+	Garden    PlayerGarden            `json:"garden"`
 }
 
 // PlacePotOnSlotRPC consumes one pot from inventory and records placement. Atomic write of inventory + garden.
@@ -162,7 +162,7 @@ func PlacePotOnSlotRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := placePotResponse{Inventory: invCopy, Garden: gardenCopy}
+	out := placePotResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
@@ -176,8 +176,8 @@ type plantSeedPayload struct {
 }
 
 type plantSeedResponse struct {
-	Inventory PlayerInventory `json:"inventory"`
-	Garden    PlayerGarden    `json:"garden"`
+	Inventory PlayerInventoryResponse `json:"inventory"`
+	Garden    PlayerGarden            `json:"garden"`
 }
 
 // PlantSeedInPotRPC consumes one seed from inventory and records plant on an existing pot (no pot consumed).
@@ -291,7 +291,7 @@ func PlantSeedInPotRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := plantSeedResponse{Inventory: invCopy, Garden: gardenCopy}
+	out := plantSeedResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
@@ -377,9 +377,9 @@ type harvestReward struct {
 }
 
 type harvestPlantResponse struct {
-	Inventory PlayerInventory `json:"inventory"`
-	Garden    PlayerGarden    `json:"garden"`
-	Reward    harvestReward   `json:"reward"`
+	Inventory PlayerInventoryResponse `json:"inventory"`
+	Garden    PlayerGarden            `json:"garden"`
+	Reward    harvestReward           `json:"reward"`
 }
 
 type destroyDeadPlantPayload struct {
@@ -396,8 +396,8 @@ type treatPlantDiseasePayload struct {
 }
 
 type treatPlantDiseaseResponse struct {
-	Inventory PlayerInventory `json:"inventory"`
-	Garden    PlayerGarden    `json:"garden"`
+	Inventory PlayerInventoryResponse `json:"inventory"`
+	Garden    PlayerGarden            `json:"garden"`
 }
 
 // TreatPlantDiseaseRPC consumes a treatment item, clears plant disease, and adds protection time.
@@ -510,7 +510,7 @@ func TreatPlantDiseaseRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := treatPlantDiseaseResponse{Inventory: invCopy, Garden: gardenCopy}
+	out := treatPlantDiseaseResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
@@ -627,7 +627,7 @@ func HarvestPlantInPotRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := harvestPlantResponse{Inventory: invCopy, Garden: gardenCopy, Reward: reward}
+	out := harvestPlantResponse{Inventory: NewPlayerInventoryResponse(invCopy), Garden: gardenCopy, Reward: reward}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
