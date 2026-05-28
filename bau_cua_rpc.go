@@ -271,7 +271,7 @@ func normalizeBauCuaRoomID(roomID string) string {
 }
 
 func defaultBauCuaSlots() []bauCuaSlotStateDTO {
-	symbols := []string{"bau", "cua", "tom", "ca", "ga", "cop"}
+	symbols := []string{"bau", "cua", "tom", "ca", "ga", "nai"}
 	out := make([]bauCuaSlotStateDTO, 0, len(symbols))
 	for i, symbolID := range symbols {
 		out = append(out, bauCuaSlotStateDTO{
