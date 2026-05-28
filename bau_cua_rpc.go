@@ -15,7 +15,7 @@ import (
 
 const (
 	bauCuaDefaultRoomID      = "default"
-	bauCuaRoundSeconds       = int64(180)
+	bauCuaRoundSeconds       = int64(30)
 	bauCuaResultLockSeconds  = int64(5)
 	bauCuaStorageCollection  = "bau_cua"
 	bauCuaBetsCollection     = "bau_cua_bets"
