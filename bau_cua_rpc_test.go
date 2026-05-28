@@ -39,7 +39,7 @@ func TestDefaultBauCuaSlots(t *testing.T) {
 	if got[0].SlotID != "slot_1" || got[0].SymbolID != "bau" {
 		t.Fatalf("unexpected first slot: %#v", got[0])
 	}
-	if got[5].SlotID != "slot_6" || got[5].SymbolID != "cop" {
+	if got[5].SlotID != "slot_6" || got[5].SymbolID != "nai" {
 		t.Fatalf("unexpected last slot: %#v", got[5])
 	}
 }

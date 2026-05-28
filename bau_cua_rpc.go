@@ -774,7 +774,7 @@ func addBauCuaRewardItem(inv *PlayerInventory, itemID string, itemType string, q
 }
 
 func randomBauCuaResult() ([]string, error) {
-	symbols := []string{"bau", "cua", "tom", "ca", "ga", "cop"}
+	symbols := []string{"bau", "cua", "tom", "ca", "ga", "nai"}
 	out := make([]string, 0, 3)
 	for i := 0; i < 3; i++ {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(symbols))))
