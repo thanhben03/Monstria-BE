@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,6 +25,14 @@ type FlowerDefinition struct {
 }
 
 const flowerCatalogFileName = "flower_catalog.json"
+
+const (
+	flowerCatalogStorageCollection = "catalog"
+	flowerCatalogStorageKey        = "flower_catalog"
+	flowerCatalogStorageUserID     = ""
+)
+
+var errFlowerCatalogStorageNotFound = errors.New("flower catalog storage not found")
 
 type flowerCatalogConfig struct {
 	Flowers []FlowerDefinition `json:"flowers"`
@@ -74,6 +83,73 @@ func loadFlowerDefinitionsFromFile(path string) error {
 	}
 	setFlowerDefinitions(defs)
 	return nil
+}
+
+func loadFlowerDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModule) error {
+	defs, err := readFlowerDefinitionsFromStorage(ctx, nk)
+	if err != nil {
+		return err
+	}
+	setFlowerDefinitions(defs)
+	return nil
+}
+
+func bootstrapFlowerDefinitionsStorage(ctx context.Context, nk runtime.NakamaModule) error {
+	if err := loadFlowerDefinitionsFromStorage(ctx, nk); err == nil {
+		return nil
+	} else if !errors.Is(err, errFlowerCatalogStorageNotFound) {
+		return err
+	}
+
+	path, err := resolveFlowerCatalogPath()
+	if err != nil {
+		return err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read flower catalog %q: %w", path, err)
+	}
+	if _, err := parseFlowerDefinitions(raw); err != nil {
+		return fmt.Errorf("parse flower catalog %q: %w", path, err)
+	}
+
+	if _, err := nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection:      flowerCatalogStorageCollection,
+			Key:             flowerCatalogStorageKey,
+			UserID:          flowerCatalogStorageUserID,
+			Value:           string(raw),
+			Version:         "",
+			PermissionRead:  2,
+			PermissionWrite: 0,
+		},
+	}); err != nil {
+		return fmt.Errorf("write flower catalog storage: %w", err)
+	}
+
+	return loadFlowerDefinitionsFromStorage(ctx, nk)
+}
+
+func readFlowerDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModule) ([]FlowerDefinition, error) {
+	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
+		{
+			Collection: flowerCatalogStorageCollection,
+			Key:        flowerCatalogStorageKey,
+			UserID:     flowerCatalogStorageUserID,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("read flower catalog storage: %w", err)
+	}
+	if len(objs) == 0 {
+		return nil, fmt.Errorf("%w: %s/%s", errFlowerCatalogStorageNotFound, flowerCatalogStorageCollection, flowerCatalogStorageKey)
+	}
+
+	defs, err := parseFlowerDefinitions([]byte(objs[0].GetValue()))
+	if err != nil {
+		return nil, fmt.Errorf("parse flower catalog storage: %w", err)
+	}
+	return defs, nil
 }
 
 func parseFlowerDefinitions(raw []byte) ([]FlowerDefinition, error) {

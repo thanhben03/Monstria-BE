@@ -17,7 +17,7 @@ func InitModule(
 
 	logger.Info("Module loaded!")
 
-	if err := loadFlowerDefinitions(); err != nil {
+	if err := bootstrapFlowerDefinitionsStorage(ctx, nk); err != nil {
 		return err
 	}
 	if err := bootstrapShopItemDefinitionsStorage(ctx, nk); err != nil {
