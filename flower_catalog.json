@@ -15,6 +15,14 @@
       "rewardItemId": "flower_sunflower",
       "rewardQuantity": 1,
       "disease": ["bocanhcung"]
+    },
+    {
+      "seedItemId": "seed_tuyetduong",
+      "flowerItemId": "flower_tuyetduong",
+      "growSeconds": 60,
+      "rewardItemId": "flower_tuyetduong",
+      "rewardQuantity": 1,
+      "disease": ["borua"]
     }
   ]
 }
