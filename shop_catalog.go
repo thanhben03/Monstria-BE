@@ -25,9 +25,10 @@ const (
 	shopCurrencyCoin = "coin"
 	shopCurrencyGem  = "gem"
 
-	shopGrantTypePot  = "pot"
-	shopGrantTypeSeed = "seed"
-	shopGrantTypeItem = "item"
+	shopGrantTypePot   = "pot"
+	shopGrantTypeSeed  = "seed"
+	shopGrantTypeDecor = "decor"
+	shopGrantTypeItem  = "item"
 )
 
 type ShopItemDefinition struct {
@@ -314,10 +315,12 @@ func normalizeShopGrantType(grantType string) string {
 	switch strings.TrimSpace(strings.ToLower(grantType)) {
 	case shopGrantTypePot:
 		return shopGrantTypePot
-	case "flower", "decoration", "decor", "tool", shopGrantTypeItem:
-		return shopGrantTypeItem
 	case shopGrantTypeSeed:
 		return shopGrantTypeSeed
+	case "decoration", shopGrantTypeDecor:
+		return shopGrantTypeDecor
+	case "flower", "tool", shopGrantTypeItem:
+		return shopGrantTypeItem
 	default:
 		return ""
 	}
@@ -422,7 +425,7 @@ func listShopItemDefinitionsForCategory(category string) []ShopItemDefinition {
 }
 
 func listShopItemDefinitionsForCategoryFrom(defs []ShopItemDefinition, category string) []ShopItemDefinition {
-	category = strings.TrimSpace(strings.ToLower(category))
+	category = normalizeShopCategory(category)
 	defs = sortShopItemDefinitions(defs)
 	if category == "" {
 		return defs
@@ -430,6 +433,16 @@ func listShopItemDefinitionsForCategoryFrom(defs []ShopItemDefinition, category 
 
 	byCategory := groupShopItemDefinitionsByCategory(defs)
 	return append([]ShopItemDefinition(nil), byCategory[category]...)
+}
+
+func normalizeShopCategory(category string) string {
+	category = strings.TrimSpace(strings.ToLower(category))
+	switch category {
+	case "decoration":
+		return shopGrantTypeDecor
+	default:
+		return category
+	}
 }
 
 func paginateShopItemDefinitions(defs []ShopItemDefinition, page int, pageSize int) ([]ShopItemDefinition, shopCatalogPagination) {
@@ -483,6 +496,8 @@ func shopCategoryForGrantType(grantType string) string {
 		return "pot"
 	case shopGrantTypeSeed:
 		return "seed"
+	case shopGrantTypeDecor:
+		return "decor"
 	default:
 		return "flower"
 	}

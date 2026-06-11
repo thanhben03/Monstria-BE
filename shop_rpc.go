@@ -335,6 +335,8 @@ func grantShopItemQuantity(inv *PlayerInventory, def ShopItemDefinition, quantit
 		return AddPot(inv, def.GrantItemID, quantity)
 	case shopGrantTypeSeed:
 		return AddSeed(inv, def.GrantItemID, quantity)
+	case shopGrantTypeDecor:
+		return AddItem(inv, def.GrantItemID, quantity)
 	case shopGrantTypeItem:
 		return AddItem(inv, def.GrantItemID, quantity)
 	default:
