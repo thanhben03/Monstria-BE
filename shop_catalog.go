@@ -571,7 +571,7 @@ func shopItemDefinitionWithDetailText(def ShopItemDefinition) ShopItemDefinition
 func renderDecorShopItemSideText(def ShopItemDefinition) string {
 	lines := []string{
 		fmt.Sprintf("<color=#00FF00>Mô tả: </color> %s", def.Desc),
-		fmt.Sprintf("Bonus: giúp tăng <color=#FFFF00>%d</color>", def.HarvestQuantity),
+		fmt.Sprintf("Bonus: giúp tăng <color=#FFFF00>%d%%</color> sản lượng khi thu hoạch", def.HarvestBonus),
 	}
 
 	return strings.Join(lines, "\n")
