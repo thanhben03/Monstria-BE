@@ -54,6 +54,7 @@ type ShopItemDefinition struct {
 	GoldPerHour     int      `json:"goldPerHour,omitempty"`
 	DetailMainText  string   `json:"detailMainText,omitempty"`
 	DetailSideText  string   `json:"detailSideText,omitempty"`
+	HarvestBonus    int      `json:"harvestBonus,omitempty"`
 }
 
 type ShopPriceLevelDefinition struct {
@@ -560,8 +561,20 @@ func shopItemDefinitionWithDetailText(def ShopItemDefinition) ShopItemDefinition
 	case shopGrantTypePot:
 		def.DetailMainText = strings.TrimSpace(def.Summary)
 		def.DetailSideText = renderPotShopItemSideText(def)
+	case shopGrantTypeDecor:
+		def.DetailMainText = strings.TrimSpace(def.Summary)
+		def.DetailSideText = renderDecorShopItemSideText(def)
 	}
 	return def
+}
+
+func renderDecorShopItemSideText(def ShopItemDefinition) string {
+	lines := []string{
+		fmt.Sprintf("<color=#00FF00>Mô tả: </color> %s", def.Desc),
+		fmt.Sprintf("Bonus: giúp tăng <color=#FFFF00>%d</color>", def.HarvestQuantity),
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func shopItemDefinitionWithoutDetailText(def ShopItemDefinition) ShopItemDefinition {

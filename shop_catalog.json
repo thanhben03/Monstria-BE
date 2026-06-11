@@ -446,15 +446,17 @@
 		],
 		"decor": [
 			{
-				"shopItemId": "decor_chuonggio",
+				"shopItemId": "decor_chuong_gio",
 				"grantType": "decor",
 				"grantItemId": "decor_chuong_gio",
 				"nameItem": "Chuông gió",
 				"quantity": 1,
 				"coinPrice": 100,
 				"gemPrice": 2,
-				"desc": "Đồ trang trí là một chuông gió dễ thương",
-				"goldPerHour": 5
+				"summary": "Chuông gió nhỏ xinh, tạo âm thanh trong trẻo cho khu vườn.",
+				"desc": "Chuông gió nhỏ xinh với âm thanh trong trẻo, mang lại cảm giác thư giãn mỗi khi có gió thổi qua. Phù hợp treo trong vườn để tạo điểm nhấn nhẹ nhàng và dễ thương.",
+				"goldPerHour": 5,
+				"harvestBonus": 10
 			}
 		]
 	}
