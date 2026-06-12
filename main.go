@@ -79,6 +79,12 @@ func InitModule(
 	if err := initializer.RegisterRpc("update_cloud_layers", UpdateCloudLayersRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("get_player_decor", GetPlayerDecorRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("place_decor_on_slot", PlaceDecorOnSlotRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("bau_cua_get_state", BauCuaGetStateRPC); err != nil {
 		return err
 	}

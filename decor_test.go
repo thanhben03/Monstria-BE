@@ -1,0 +1,40 @@
+package main
+
+import "testing"
+
+func TestNormalizeDecorPlacements(t *testing.T) {
+	got := normalizeDecorPlacements([]DecorPlacement{
+		{SlotID: "1_0", ItemID: "decor_b"},
+		{SlotID: "", ItemID: "decor_skip"},
+		{SlotID: "0_0", ItemID: "decor_a"},
+		{SlotID: "0_0", ItemID: "decor_a2"},
+		{SlotID: "2_0", ItemID: ""},
+	})
+
+	want := []DecorPlacement{
+		{SlotID: "0_0", ItemID: "decor_a2"},
+		{SlotID: "1_0", ItemID: "decor_b"},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("len got %d want %d: %#v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("at %d got %#v want %#v", i, got[i], want[i])
+		}
+	}
+}
+
+func TestDecorPlaceItemRejectsOccupiedSlot(t *testing.T) {
+	decor := defaultPlayerDecor()
+	if err := decorPlaceItem(&decor, "0_0", "decor_den_ngoi_sao"); err != nil {
+		t.Fatalf("place decor: %v", err)
+	}
+	if err := decorPlaceItem(&decor, "0_0", "decor_chuong_gio"); err == nil {
+		t.Fatal("expected occupied slot error")
+	}
+	if len(decor.Placements) != 1 || decor.Placements[0].ItemID != "decor_den_ngoi_sao" {
+		t.Fatalf("unexpected decor state: %#v", decor.Placements)
+	}
+}
