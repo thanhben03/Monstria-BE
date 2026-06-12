@@ -40,10 +40,11 @@ type placeDecorPayload struct {
 }
 
 type placeDecorResponse struct {
-	Decor PlayerDecor `json:"decor"`
+	Inventory PlayerInventory `json:"inventory"`
+	Decor     PlayerDecor     `json:"decor"`
 }
 
-// PlaceDecorOnSlotRPC records one decor placement. Inventory is not consumed.
+// PlaceDecorOnSlotRPC consumes one decor item and records one decor placement.
 func PlaceDecorOnSlotRPC(
 	ctx context.Context,
 	logger runtime.Logger,
@@ -61,22 +62,90 @@ func PlaceDecorOnSlotRPC(
 		return "", runtime.NewError("invalid JSON payload", 3)
 	}
 
-	decor, version, err := readPlayerDecor(ctx, nk, userID)
+	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
+		{Collection: playerStateCollection, Key: playerInventoryKey, UserID: userID},
+		{Collection: playerStateCollection, Key: playerDecorKey, UserID: userID},
+	})
 	if err != nil {
-		logger.Error("read decor before place: %v", err)
-		return "", runtime.NewError("failed to load decor", 13)
+		logger.Error("storage read place decor: %v", err)
+		return "", runtime.NewError("failed to load state", 13)
 	}
 
-	if err := decorPlaceItem(&decor, body.SlotID, body.ItemID); err != nil {
+	inv := defaultPlayerInventory()
+	invVer := ""
+	decor := defaultPlayerDecor()
+	decorVer := ""
+
+	for _, o := range objs {
+		switch o.GetKey() {
+		case playerInventoryKey:
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
+				return "", runtime.NewError("corrupt inventory", 13)
+			}
+			inv = decoded
+			invVer = o.GetVersion()
+		case playerDecorKey:
+			if err := json.Unmarshal([]byte(o.GetValue()), &decor); err != nil {
+				return "", runtime.NewError("corrupt decor", 13)
+			}
+			decor.Placements = normalizeDecorPlacements(decor.Placements)
+			decorVer = o.GetVersion()
+		}
+	}
+
+	if !storageReadHasKey(objs, playerInventoryKey) {
+		return "", runtime.NewError("inventory not initialized", 9)
+	}
+
+	invCopy := inv
+	if err := ConsumeOneItem(&invCopy, body.ItemID); err != nil {
 		return "", err
 	}
 
-	if err := writePlayerDecor(ctx, nk, userID, version, decor); err != nil {
-		logger.Error("write decor: %v", err)
+	decorCopy := decor
+	if err := decorPlaceItem(&decorCopy, body.SlotID, body.ItemID); err != nil {
+		return "", err
+	}
+
+	invRaw, err := json.Marshal(normalizePlayerInventory(invCopy))
+	if err != nil {
+		return "", err
+	}
+	decorRaw, err := json.Marshal(decorCopy)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection:      playerStateCollection,
+			Key:             playerInventoryKey,
+			UserID:          userID,
+			Value:           string(invRaw),
+			Version:         invVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+		{
+			Collection:      playerStateCollection,
+			Key:             playerDecorKey,
+			UserID:          userID,
+			Value:           string(decorRaw),
+			Version:         decorVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+	})
+	if err != nil {
+		logger.Error("storage write place decor: %v", err)
 		return "", runtime.NewError("failed to save decor", 13)
 	}
 
-	raw, err := json.Marshal(placeDecorResponse{Decor: decor})
+	raw, err := json.Marshal(placeDecorResponse{
+		Inventory: normalizePlayerInventory(invCopy),
+		Decor:     decorCopy,
+	})
 	if err != nil {
 		return "", err
 	}
