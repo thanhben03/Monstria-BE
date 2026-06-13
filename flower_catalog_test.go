@@ -46,3 +46,21 @@ func TestFlowerDefinitionIncludesTuyetDuong(t *testing.T) {
 		t.Fatalf("got %#v", def)
 	}
 }
+
+func TestFlowerDefinitionsNeedExpRewardRefresh(t *testing.T) {
+	storageDefs := []FlowerDefinition{
+		{SeedItemID: "seed_rose", RewardItemID: "flower_rose", RewardQuantity: 1},
+	}
+	fileDefs := []FlowerDefinition{
+		{SeedItemID: "seed_rose", RewardItemID: "flower_rose", RewardQuantity: 1, ExpReward: 20},
+	}
+
+	if !flowerDefinitionsNeedExpRewardRefresh(storageDefs, fileDefs) {
+		t.Fatal("expected missing storage exp reward to need refresh")
+	}
+
+	storageDefs[0].ExpReward = 20
+	if flowerDefinitionsNeedExpRewardRefresh(storageDefs, fileDefs) {
+		t.Fatal("did not expect refresh when storage already has exp reward")
+	}
+}

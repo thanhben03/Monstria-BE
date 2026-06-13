@@ -74,16 +74,24 @@ func resolveFlowerCatalogPath() (string, error) {
 }
 
 func loadFlowerDefinitionsFromFile(path string) error {
-	raw, err := os.ReadFile(path)
+	_, defs, err := readFlowerDefinitionsFile(path)
 	if err != nil {
-		return fmt.Errorf("read flower catalog %q: %w", path, err)
-	}
-	defs, err := parseFlowerDefinitions(raw)
-	if err != nil {
-		return fmt.Errorf("parse flower catalog %q: %w", path, err)
+		return err
 	}
 	setFlowerDefinitions(defs)
 	return nil
+}
+
+func readFlowerDefinitionsFile(path string) ([]byte, []FlowerDefinition, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read flower catalog %q: %w", path, err)
+	}
+	defs, err := parseFlowerDefinitions(raw)
+	if err != nil {
+		return nil, nil, fmt.Errorf("parse flower catalog %q: %w", path, err)
+	}
+	return raw, defs, nil
 }
 
 func loadFlowerDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModule) error {
@@ -96,7 +104,21 @@ func loadFlowerDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModu
 }
 
 func bootstrapFlowerDefinitionsStorage(ctx context.Context, nk runtime.NakamaModule) error {
-	if err := loadFlowerDefinitionsFromStorage(ctx, nk); err == nil {
+	storageDefs, err := readFlowerDefinitionsFromStorage(ctx, nk)
+	if err == nil {
+		path, fileErr := resolveFlowerCatalogPath()
+		if fileErr == nil {
+			raw, fileDefs, fileErr := readFlowerDefinitionsFile(path)
+			if fileErr == nil && flowerDefinitionsNeedExpRewardRefresh(storageDefs, fileDefs) {
+				if err := writeFlowerDefinitionsStorage(ctx, nk, string(raw)); err != nil {
+					return err
+				}
+				setFlowerDefinitions(fileDefs)
+				return nil
+			}
+		}
+
+		setFlowerDefinitions(storageDefs)
 		return nil
 	} else if !errors.Is(err, errFlowerCatalogStorageNotFound) {
 		return err
@@ -106,20 +128,25 @@ func bootstrapFlowerDefinitionsStorage(ctx context.Context, nk runtime.NakamaMod
 	if err != nil {
 		return err
 	}
-	raw, err := os.ReadFile(path)
+	raw, _, err := readFlowerDefinitionsFile(path)
 	if err != nil {
-		return fmt.Errorf("read flower catalog %q: %w", path, err)
-	}
-	if _, err := parseFlowerDefinitions(raw); err != nil {
-		return fmt.Errorf("parse flower catalog %q: %w", path, err)
+		return err
 	}
 
+	if err := writeFlowerDefinitionsStorage(ctx, nk, string(raw)); err != nil {
+		return err
+	}
+
+	return loadFlowerDefinitionsFromStorage(ctx, nk)
+}
+
+func writeFlowerDefinitionsStorage(ctx context.Context, nk runtime.NakamaModule, value string) error {
 	if _, err := nk.StorageWrite(ctx, []*runtime.StorageWrite{
 		{
 			Collection:      flowerCatalogStorageCollection,
 			Key:             flowerCatalogStorageKey,
 			UserID:          flowerCatalogStorageUserID,
-			Value:           string(raw),
+			Value:           value,
 			Version:         "",
 			PermissionRead:  2,
 			PermissionWrite: 0,
@@ -127,8 +154,26 @@ func bootstrapFlowerDefinitionsStorage(ctx context.Context, nk runtime.NakamaMod
 	}); err != nil {
 		return fmt.Errorf("write flower catalog storage: %w", err)
 	}
+	return nil
+}
 
-	return loadFlowerDefinitionsFromStorage(ctx, nk)
+func flowerDefinitionsNeedExpRewardRefresh(storageDefs []FlowerDefinition, fileDefs []FlowerDefinition) bool {
+	fileExpRewardBySeed := make(map[string]int, len(fileDefs))
+	for _, def := range fileDefs {
+		if def.ExpReward > 0 {
+			fileExpRewardBySeed[def.SeedItemID] = def.ExpReward
+		}
+	}
+
+	for _, def := range storageDefs {
+		if def.ExpReward > 0 {
+			continue
+		}
+		if fileExpRewardBySeed[def.SeedItemID] > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func readFlowerDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModule) ([]FlowerDefinition, error) {
