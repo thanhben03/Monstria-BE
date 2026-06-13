@@ -89,8 +89,11 @@ func normalizePlayerResources(resources PlayerResources) PlayerResources {
 
 func playerResourcesForStorage(resources PlayerResources) PlayerResources {
 	resources = normalizePlayerResources(resources)
+	resources.Coin = 0
+	resources.Gem = 0
 	resources.ExpToNextLevel = 0
 	resources.ExpProgress = 0
+	resources.WalletMigrated = true
 	return resources
 }
 
@@ -137,9 +140,6 @@ func readPlayerResources(ctx context.Context, nk runtime.NakamaModule, userID st
 
 func writePlayerResources(ctx context.Context, nk runtime.NakamaModule, userID string, version string, resources PlayerResources) error {
 	resources = normalizePlayerResources(resources)
-	resources.Coin = 0
-	resources.Gem = 0
-	resources.WalletMigrated = true
 	raw, err := json.Marshal(playerResourcesForStorage(resources))
 	if err != nil {
 		return err

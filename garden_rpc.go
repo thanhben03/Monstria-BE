@@ -358,14 +358,16 @@ type harvestPlantPayload struct {
 }
 
 type harvestReward struct {
-	ItemID   string `json:"itemId"`
-	Quantity int    `json:"quantity"`
+	ItemID    string `json:"itemId"`
+	Quantity  int    `json:"quantity"`
+	ExpReward int    `json:"expReward,omitempty"`
 }
 
 type harvestPlantResponse struct {
 	Inventory PlayerInventory `json:"inventory"`
 	Garden    PlayerGarden    `json:"garden"`
 	Reward    harvestReward   `json:"reward"`
+	Resources PlayerResources `json:"resources"`
 }
 
 type destroyDeadPlantPayload struct {
@@ -565,11 +567,26 @@ func HarvestPlantInPotRPC(
 		return "", err
 	}
 
+	resourcesCopy, resourcesVer, err := readPlayerResources(ctx, nk, userID)
+	if err != nil {
+		logger.Error("read resources before harvest exp: %v", err)
+		return "", runtime.NewError("failed to load resources", 13)
+	}
+	if reward.ExpReward > 0 {
+		if _, err := AddPlayerExp(&resourcesCopy, reward.ExpReward); err != nil {
+			return "", err
+		}
+	}
+
 	invRaw, err := json.Marshal(invCopy)
 	if err != nil {
 		return "", err
 	}
 	gardenRaw, err := json.Marshal(gardenCopy)
+	if err != nil {
+		return "", err
+	}
+	resourcesRaw, err := json.Marshal(playerResourcesForStorage(resourcesCopy))
 	if err != nil {
 		return "", err
 	}
@@ -593,13 +610,27 @@ func HarvestPlantInPotRPC(
 			PermissionRead:  1,
 			PermissionWrite: 0,
 		},
+		{
+			Collection:      playerStateCollection,
+			Key:             playerStateKey,
+			UserID:          userID,
+			Value:           string(resourcesRaw),
+			Version:         resourcesVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
 	})
 	if err != nil {
 		logger.Error("storage write harvest plant: %v", err)
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := harvestPlantResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy, Reward: reward}
+	out := harvestPlantResponse{
+		Inventory: normalizePlayerInventory(invCopy),
+		Garden:    gardenCopy,
+		Reward:    reward,
+		Resources: decoratePlayerResources(resourcesCopy),
+	}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err

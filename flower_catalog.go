@@ -21,6 +21,7 @@ type FlowerDefinition struct {
 	GrowSeconds    int64    `json:"growSeconds"`
 	RewardItemID   string   `json:"rewardItemId"`
 	RewardQuantity int      `json:"rewardQuantity"`
+	ExpReward      int      `json:"expReward,omitempty"`
 	Disease        []string `json:"disease,omitempty"`
 }
 
@@ -191,6 +192,9 @@ func validateFlowerDefinitions(defs []FlowerDefinition) ([]FlowerDefinition, err
 		}
 		if def.RewardQuantity < 1 {
 			return nil, fmt.Errorf("flowers[%d].rewardQuantity must be greater than 0", i)
+		}
+		if def.ExpReward < 0 {
+			return nil, fmt.Errorf("flowers[%d].expReward cannot be negative", i)
 		}
 		if _, ok := seenSeeds[def.SeedItemID]; ok {
 			return nil, fmt.Errorf("duplicate seedItemId %q", def.SeedItemID)

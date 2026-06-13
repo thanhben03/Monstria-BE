@@ -25,7 +25,7 @@ func TestFlowerDefinitionForSeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if def.RewardItemID != "flower_rose" || def.RewardQuantity != 1 || def.GrowSeconds != 60 {
+	if def.RewardItemID != "flower_rose" || def.RewardQuantity != 1 || def.GrowSeconds != 60 || def.ExpReward != 20 {
 		t.Fatalf("got %#v", def)
 	}
 	if len(def.Disease) != 1 || def.Disease[0] != "borua" {
@@ -42,7 +42,7 @@ func TestFlowerDefinitionIncludesTuyetDuong(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if def.RewardItemID != "flower_tuyetduong" || def.RewardQuantity != 1 || def.GrowSeconds != 60 {
+	if def.RewardItemID != "flower_tuyetduong" || def.RewardQuantity != 1 || def.GrowSeconds != 60 || def.ExpReward != 25 {
 		t.Fatalf("got %#v", def)
 	}
 }

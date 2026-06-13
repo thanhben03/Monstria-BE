@@ -97,7 +97,7 @@ func TestGardenHarvestPlant(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if reward.ItemID != "flower_rose" || reward.Quantity != 1 {
+	if reward.ItemID != "flower_rose" || reward.Quantity != 1 || reward.ExpReward != 20 {
 		t.Fatalf("got reward %#v", reward)
 	}
 

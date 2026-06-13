@@ -244,7 +244,7 @@ func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestR
 
 	g.Placements[idx].Plant = nil
 	g.Placements = normalizeGardenPlacements(g.Placements)
-	return harvestReward{ItemID: def.RewardItemID, Quantity: def.RewardQuantity}, nil
+	return harvestReward{ItemID: def.RewardItemID, Quantity: def.RewardQuantity, ExpReward: def.ExpReward}, nil
 }
 
 func gardenDestroyDeadPlant(g *PlayerGarden, slotID string, nowUnix int64) error {
