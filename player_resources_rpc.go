@@ -25,6 +25,7 @@ func GetPlayerResourcesRPC(
 		logger.Error("read resources: %v", err)
 		return "", runtime.NewError("failed to load resources", 13)
 	}
+	resources = decoratePlayerResources(resources)
 
 	raw, err := json.Marshal(resources)
 	if err != nil {

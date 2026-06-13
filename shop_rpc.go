@@ -275,7 +275,7 @@ func PurchaseShopItemRPC(
 	}
 
 	out := purchaseShopItemResponse{
-		Resources: resourcesAfter,
+		Resources: decoratePlayerResources(resourcesAfter),
 		Inventory: normalizePlayerInventory(invCopy),
 		Purchase: shopPurchaseResult{
 			ShopItemID:       def.ShopItemID,

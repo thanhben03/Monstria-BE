@@ -23,6 +23,9 @@ func InitModule(
 	if err := bootstrapShopItemDefinitionsStorage(ctx, nk); err != nil {
 		return err
 	}
+	if err := bootstrapLevelDefinitionsStorage(ctx, nk); err != nil {
+		return err
+	}
 
 	err := initializer.RegisterRpc("ping", PingRPC)
 	if err != nil {

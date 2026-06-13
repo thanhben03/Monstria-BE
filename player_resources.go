@@ -14,12 +14,15 @@ const (
 )
 
 type PlayerResources struct {
-	Coin                int  `json:"coin"`
-	Gem                 int  `json:"gem"`
-	Energy              int  `json:"energy"`
-	Level               int  `json:"level"`
-	UnlockedCloudLayers int  `json:"unlockedCloudLayers"`
-	WalletMigrated      bool `json:"walletMigrated,omitempty"`
+	Coin                int     `json:"coin"`
+	Gem                 int     `json:"gem"`
+	Energy              int     `json:"energy"`
+	Level               int     `json:"level"`
+	Exp                 int     `json:"exp"`
+	ExpToNextLevel      int     `json:"expToNextLevel,omitempty"`
+	ExpProgress         float64 `json:"expProgress,omitempty"`
+	UnlockedCloudLayers int     `json:"unlockedCloudLayers"`
+	WalletMigrated      bool    `json:"walletMigrated,omitempty"`
 }
 
 func defaultPlayerResources() PlayerResources {
@@ -28,6 +31,7 @@ func defaultPlayerResources() PlayerResources {
 		Gem:                 50,
 		Energy:              100,
 		Level:               1,
+		Exp:                 0,
 		UnlockedCloudLayers: 1,
 	}
 }
@@ -39,7 +43,7 @@ func initPlayerResources(ctx context.Context, nk runtime.NakamaModule, userID st
 	defaultResources.Gem = 0
 	defaultResources.WalletMigrated = true
 
-	raw, err := json.Marshal(defaultResources)
+	raw, err := json.Marshal(playerResourcesForStorage(defaultResources))
 	if err != nil {
 		return err
 	}
@@ -74,9 +78,19 @@ func normalizePlayerResources(resources PlayerResources) PlayerResources {
 	if resources.Level < 1 {
 		resources.Level = 1
 	}
+	if resources.Exp < 0 {
+		resources.Exp = 0
+	}
 	if resources.UnlockedCloudLayers < 1 {
 		resources.UnlockedCloudLayers = 1
 	}
+	return resources
+}
+
+func playerResourcesForStorage(resources PlayerResources) PlayerResources {
+	resources = normalizePlayerResources(resources)
+	resources.ExpToNextLevel = 0
+	resources.ExpProgress = 0
 	return resources
 }
 
@@ -126,7 +140,7 @@ func writePlayerResources(ctx context.Context, nk runtime.NakamaModule, userID s
 	resources.Coin = 0
 	resources.Gem = 0
 	resources.WalletMigrated = true
-	raw, err := json.Marshal(resources)
+	raw, err := json.Marshal(playerResourcesForStorage(resources))
 	if err != nil {
 		return err
 	}
@@ -188,7 +202,7 @@ func migratePlayerResourcesWallet(ctx context.Context, nk runtime.NakamaModule, 
 	resources.Gem = 0
 	resources.WalletMigrated = true
 
-	raw, err := json.Marshal(resources)
+	raw, err := json.Marshal(playerResourcesForStorage(resources))
 	if err != nil {
 		return PlayerResources{}, "", err
 	}
