@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/heroiclabs/nakama-common/runtime"
 )
@@ -13,11 +14,12 @@ const (
 )
 
 type PlayerResources struct {
-	Coin                int `json:"coin"`
-	Gem                 int `json:"gem"`
-	Energy              int `json:"energy"`
-	Level               int `json:"level"`
-	UnlockedCloudLayers int `json:"unlockedCloudLayers"`
+	Coin                int  `json:"coin"`
+	Gem                 int  `json:"gem"`
+	Energy              int  `json:"energy"`
+	Level               int  `json:"level"`
+	UnlockedCloudLayers int  `json:"unlockedCloudLayers"`
+	WalletMigrated      bool `json:"walletMigrated,omitempty"`
 }
 
 func defaultPlayerResources() PlayerResources {
@@ -32,13 +34,17 @@ func defaultPlayerResources() PlayerResources {
 
 func initPlayerResources(ctx context.Context, nk runtime.NakamaModule, userID string) error {
 	defaultResources := defaultPlayerResources()
+	walletChangeset := walletChangesetFromResources(defaultResources)
+	defaultResources.Coin = 0
+	defaultResources.Gem = 0
+	defaultResources.WalletMigrated = true
 
 	raw, err := json.Marshal(defaultResources)
 	if err != nil {
 		return err
 	}
 
-	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
+	_, _, err = nk.MultiUpdate(ctx, nil, []*runtime.StorageWrite{
 		{
 			Collection:      playerStateCollection,
 			Key:             playerStateKey,
@@ -48,7 +54,15 @@ func initPlayerResources(ctx context.Context, nk runtime.NakamaModule, userID st
 			PermissionRead:  1,
 			PermissionWrite: 0,
 		},
-	})
+	}, nil, []*runtime.WalletUpdate{
+		{
+			UserID:    userID,
+			Changeset: walletChangeset,
+			Metadata: map[string]interface{}{
+				"source": "new_player_resources",
+			},
+		},
+	}, true)
 	if err != nil {
 		return err
 	}
@@ -78,18 +92,40 @@ func readPlayerResources(ctx context.Context, nk runtime.NakamaModule, userID st
 		return PlayerResources{}, "", err
 	}
 	if len(objs) == 0 {
-		return defaultPlayerResources(), "", nil
+		resources := defaultPlayerResources()
+		wallet, err := readPlayerWallet(ctx, nk, userID)
+		if err != nil {
+			return PlayerResources{}, "", err
+		}
+		return applyWalletToResources(resources, wallet), "", nil
 	}
 
 	var resources PlayerResources
 	if err := json.Unmarshal([]byte(objs[0].GetValue()), &resources); err != nil {
 		return PlayerResources{}, "", err
 	}
-	return normalizePlayerResources(resources), objs[0].GetVersion(), nil
+	resources = normalizePlayerResources(resources)
+	version := objs[0].GetVersion()
+	if !resources.WalletMigrated {
+		var err error
+		resources, version, err = migratePlayerResourcesWallet(ctx, nk, userID, version, resources)
+		if err != nil {
+			return PlayerResources{}, "", err
+		}
+	}
+
+	wallet, err := readPlayerWallet(ctx, nk, userID)
+	if err != nil {
+		return PlayerResources{}, "", err
+	}
+	return applyWalletToResources(resources, wallet), version, nil
 }
 
 func writePlayerResources(ctx context.Context, nk runtime.NakamaModule, userID string, version string, resources PlayerResources) error {
 	resources = normalizePlayerResources(resources)
+	resources.Coin = 0
+	resources.Gem = 0
+	resources.WalletMigrated = true
 	raw, err := json.Marshal(resources)
 	if err != nil {
 		return err
@@ -109,24 +145,107 @@ func writePlayerResources(ctx context.Context, nk runtime.NakamaModule, userID s
 	return err
 }
 
-func SpendPlayerCurrency(resources *PlayerResources, currency string, price int) error {
+func BuildPlayerCurrencySpendChangeset(currency string, price int) (map[string]int64, error) {
 	if price < 1 {
-		return runtime.NewError("price must be positive", 13)
+		return nil, runtime.NewError("price must be positive", 13)
 	}
 
 	switch currency {
 	case shopCurrencyCoin:
-		if resources.Coin < price {
-			return runtime.NewError("not enough coin", 9)
-		}
-		resources.Coin -= price
+		return map[string]int64{shopCurrencyCoin: -int64(price)}, nil
 	case shopCurrencyGem:
-		if resources.Gem < price {
-			return runtime.NewError("not enough gem", 9)
-		}
-		resources.Gem -= price
+		return map[string]int64{shopCurrencyGem: -int64(price)}, nil
 	default:
-		return runtime.NewError("currency is invalid", 3)
+		return nil, runtime.NewError("currency is invalid", 3)
 	}
-	return nil
+}
+
+func walletChangesetFromResources(resources PlayerResources) map[string]int64 {
+	changeset := map[string]int64{}
+	if resources.Coin != 0 {
+		changeset[shopCurrencyCoin] = int64(resources.Coin)
+	}
+	if resources.Gem != 0 {
+		changeset[shopCurrencyGem] = int64(resources.Gem)
+	}
+	return changeset
+}
+
+func migratePlayerResourcesWallet(ctx context.Context, nk runtime.NakamaModule, userID string, version string, resources PlayerResources) (PlayerResources, string, error) {
+	changeset := walletChangesetFromResources(resources)
+	wallet, err := readPlayerWallet(ctx, nk, userID)
+	if err != nil {
+		return PlayerResources{}, "", err
+	}
+	if _, ok := wallet[shopCurrencyCoin]; ok {
+		delete(changeset, shopCurrencyCoin)
+	}
+	if _, ok := wallet[shopCurrencyGem]; ok {
+		delete(changeset, shopCurrencyGem)
+	}
+
+	resources.Coin = 0
+	resources.Gem = 0
+	resources.WalletMigrated = true
+
+	raw, err := json.Marshal(resources)
+	if err != nil {
+		return PlayerResources{}, "", err
+	}
+
+	walletUpdates := []*runtime.WalletUpdate(nil)
+	if len(changeset) > 0 {
+		walletUpdates = []*runtime.WalletUpdate{
+			{
+				UserID:    userID,
+				Changeset: changeset,
+				Metadata: map[string]interface{}{
+					"source": "legacy_resources_migration",
+				},
+			},
+		}
+	}
+
+	acks, _, err := nk.MultiUpdate(ctx, nil, []*runtime.StorageWrite{
+		{
+			Collection:      playerStateCollection,
+			Key:             playerStateKey,
+			UserID:          userID,
+			Value:           string(raw),
+			Version:         version,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+	}, nil, walletUpdates, true)
+	if err != nil {
+		return PlayerResources{}, "", err
+	}
+
+	if len(acks) > 0 {
+		version = acks[0].GetVersion()
+	}
+	return resources, version, nil
+}
+
+func readPlayerWallet(ctx context.Context, nk runtime.NakamaModule, userID string) (map[string]int64, error) {
+	account, err := nk.AccountGetId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	wallet := map[string]int64{}
+	raw := strings.TrimSpace(account.GetWallet())
+	if raw == "" {
+		return wallet, nil
+	}
+	if err := json.Unmarshal([]byte(raw), &wallet); err != nil {
+		return nil, err
+	}
+	return wallet, nil
+}
+
+func applyWalletToResources(resources PlayerResources, wallet map[string]int64) PlayerResources {
+	resources.Coin = int(wallet[shopCurrencyCoin])
+	resources.Gem = int(wallet[shopCurrencyGem])
+	return normalizePlayerResources(resources)
 }

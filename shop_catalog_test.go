@@ -390,15 +390,15 @@ func TestGrantShopItemQuantity(t *testing.T) {
 	}
 }
 
-func TestSpendPlayerCurrency(t *testing.T) {
-	resources := PlayerResources{Coin: 100, Gem: 10, Level: 1, UnlockedCloudLayers: 1}
-	if err := SpendPlayerCurrency(&resources, shopCurrencyCoin, 40); err != nil {
+func TestBuildPlayerCurrencySpendChangeset(t *testing.T) {
+	changeset, err := BuildPlayerCurrencySpendChangeset(shopCurrencyCoin, 40)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if resources.Coin != 60 {
-		t.Fatalf("got coin %d", resources.Coin)
+	if changeset[shopCurrencyCoin] != -40 {
+		t.Fatalf("got coin change %d", changeset[shopCurrencyCoin])
 	}
-	if err := SpendPlayerCurrency(&resources, shopCurrencyGem, 20); err == nil {
-		t.Fatal("expected not enough gem")
+	if _, err := BuildPlayerCurrencySpendChangeset(shopCurrencyGem, 0); err == nil {
+		t.Fatal("expected zero price to be rejected")
 	}
 }

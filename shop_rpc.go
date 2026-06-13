@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/heroiclabs/nakama-common/runtime"
@@ -171,8 +172,13 @@ func PurchaseShopItemRPC(
 		return "", err
 	}
 
+	resources, _, err := readPlayerResources(ctx, nk, userID)
+	if err != nil {
+		logger.Error("read resources purchase shop item: %v", err)
+		return "", runtime.NewError("failed to load state", 13)
+	}
+
 	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
-		{Collection: playerStateCollection, Key: playerStateKey, UserID: userID},
 		{Collection: playerStateCollection, Key: playerInventoryKey, UserID: userID},
 	})
 	if err != nil {
@@ -180,19 +186,11 @@ func PurchaseShopItemRPC(
 		return "", runtime.NewError("failed to load state", 13)
 	}
 
-	resources := defaultPlayerResources()
-	resourcesVer := ""
 	inv := defaultPlayerInventory()
 	invVer := ""
 
 	for _, o := range objs {
 		switch o.GetKey() {
-		case playerStateKey:
-			if err := json.Unmarshal([]byte(o.GetValue()), &resources); err != nil {
-				return "", runtime.NewError("corrupt resources", 13)
-			}
-			resources = normalizePlayerResources(resources)
-			resourcesVer = o.GetVersion()
 		case playerInventoryKey:
 			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
 			if err != nil {
@@ -213,10 +211,10 @@ func PurchaseShopItemRPC(
 		return "", err
 	}
 
-	resourcesCopy := resources
 	unitPrice := shopItemPriceForCurrency(def, currency)
 	price := unitPrice * purchaseQuantity
-	if err := SpendPlayerCurrency(&resourcesCopy, currency, price); err != nil {
+	walletChangeset, err := BuildPlayerCurrencySpendChangeset(currency, price)
+	if err != nil {
 		return "", err
 	}
 
@@ -226,25 +224,12 @@ func PurchaseShopItemRPC(
 		return "", err
 	}
 
-	resourcesRaw, err := json.Marshal(resourcesCopy)
-	if err != nil {
-		return "", err
-	}
 	invRaw, err := json.Marshal(invCopy)
 	if err != nil {
 		return "", err
 	}
 
-	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
-		{
-			Collection:      playerStateCollection,
-			Key:             playerStateKey,
-			UserID:          userID,
-			Value:           string(resourcesRaw),
-			Version:         resourcesVer,
-			PermissionRead:  1,
-			PermissionWrite: 0,
-		},
+	_, walletResults, err := nk.MultiUpdate(ctx, nil, []*runtime.StorageWrite{
 		{
 			Collection:      playerStateCollection,
 			Key:             playerInventoryKey,
@@ -254,14 +239,43 @@ func PurchaseShopItemRPC(
 			PermissionRead:  1,
 			PermissionWrite: 0,
 		},
-	})
+	}, nil, []*runtime.WalletUpdate{
+		{
+			UserID:    userID,
+			Changeset: walletChangeset,
+			Metadata: map[string]interface{}{
+				"source":           "purchase_shop_item",
+				"shopItemId":       def.ShopItemID,
+				"grantType":        def.GrantType,
+				"grantItemId":      def.GrantItemID,
+				"purchaseQuantity": purchaseQuantity,
+				"currency":         currency,
+				"price":            price,
+				"unitPrice":        unitPrice,
+			},
+		},
+	}, true)
 	if err != nil {
+		if walletErr := (*runtime.WalletNegativeError)(nil); errors.As(err, &walletErr) {
+			return "", runtime.NewError("not enough "+currency, 9)
+		}
 		logger.Error("storage write purchase shop item: %v", err)
 		return "", runtime.NewError("failed to save purchase (retry)", 13)
 	}
 
+	resourcesAfter := resources
+	if len(walletResults) > 0 {
+		resourcesAfter = applyWalletToResources(resourcesAfter, walletResults[0].Updated)
+	} else {
+		resourcesAfter, _, err = readPlayerResources(ctx, nk, userID)
+		if err != nil {
+			logger.Error("read resources after purchase: %v", err)
+			return "", runtime.NewError("failed to save purchase", 13)
+		}
+	}
+
 	out := purchaseShopItemResponse{
-		Resources: resourcesCopy,
+		Resources: resourcesAfter,
 		Inventory: normalizePlayerInventory(invCopy),
 		Purchase: shopPurchaseResult{
 			ShopItemID:       def.ShopItemID,
