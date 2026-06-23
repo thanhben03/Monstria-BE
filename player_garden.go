@@ -153,6 +153,27 @@ func findPlacementIndex(g *PlayerGarden, slotID string) int {
 	return -1
 }
 
+// gardenRemovePot removes an empty pot placement and returns the pot item id.
+func gardenRemovePot(g *PlayerGarden, slotID string) (string, error) {
+	sid := strings.TrimSpace(slotID)
+	if sid == "" {
+		return "", runtime.NewError("slotId is required", 3)
+	}
+
+	idx := findPlacementIndex(g, sid)
+	if idx < 0 || strings.TrimSpace(g.Placements[idx].PotItemID) == "" {
+		return "", runtime.NewError("no pot in this slot", 3)
+	}
+	if g.Placements[idx].Plant != nil {
+		return "", runtime.NewError("pot has a plant", 3)
+	}
+
+	potItemID := strings.TrimSpace(g.Placements[idx].PotItemID)
+	g.Placements = append(g.Placements[:idx], g.Placements[idx+1:]...)
+	g.Placements = normalizeGardenPlacements(g.Placements)
+	return potItemID, nil
+}
+
 // gardenPlantSeed sets plant on an existing pot; consumes no pot. slot must have pot, plant must be empty.
 func gardenPlantSeed(g *PlayerGarden, slotID, seedItemID string, plantedAtUnix int64) error {
 	sid := strings.TrimSpace(slotID)

@@ -50,6 +50,41 @@ func TestGardenPlacePotThenPlant(t *testing.T) {
 	}
 }
 
+func TestGardenRemovePot(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+
+	potItemID, err := gardenRemovePot(&g, "0_0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if potItemID != "pot_wood" {
+		t.Fatalf("unexpected pot item id %q", potItemID)
+	}
+	if len(g.Placements) != 0 {
+		t.Fatalf("expected empty garden after removing pot: %+v", g.Placements)
+	}
+}
+
+func TestGardenRemovePotRejectsPlantedPot(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := gardenRemovePot(&g, "0_0"); err == nil {
+		t.Fatal("expected planted pot removal error")
+	}
+	if len(g.Placements) != 1 || g.Placements[0].PotItemID != "pot_wood" {
+		t.Fatalf("expected garden unchanged: %+v", g.Placements)
+	}
+}
+
 func TestGardenWaterPlant(t *testing.T) {
 	g := defaultPlayerGarden()
 	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
