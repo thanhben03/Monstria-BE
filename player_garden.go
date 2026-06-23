@@ -174,6 +174,52 @@ func gardenRemovePot(g *PlayerGarden, slotID string) (string, error) {
 	return potItemID, nil
 }
 
+func gardenRemovePotsInLayer(g *PlayerGarden, slotID string) ([]string, error) {
+	layerID := layerIDFromSlotID(slotID)
+	if layerID == "" {
+		return nil, runtime.NewError("slotId is required", 3)
+	}
+
+	potItemIDs := make([]string, 0)
+	for _, placement := range g.Placements {
+		if layerIDFromSlotID(placement.SlotID) != layerID {
+			continue
+		}
+		if strings.TrimSpace(placement.PotItemID) == "" {
+			continue
+		}
+		if placement.Plant != nil {
+			return nil, runtime.NewError("layer has planted pots", 3)
+		}
+		potItemIDs = append(potItemIDs, strings.TrimSpace(placement.PotItemID))
+	}
+
+	if len(potItemIDs) == 0 {
+		return nil, runtime.NewError("no pots in this layer", 3)
+	}
+
+	kept := make([]SlotPlacement, 0, len(g.Placements)-len(potItemIDs))
+	for _, placement := range g.Placements {
+		if layerIDFromSlotID(placement.SlotID) == layerID {
+			continue
+		}
+		kept = append(kept, placement)
+	}
+	g.Placements = normalizeGardenPlacements(kept)
+	return potItemIDs, nil
+}
+
+func layerIDFromSlotID(slotID string) string {
+	sid := strings.TrimSpace(slotID)
+	if sid == "" {
+		return ""
+	}
+	if idx := strings.Index(sid, "_"); idx >= 0 {
+		return strings.TrimSpace(sid[:idx])
+	}
+	return sid
+}
+
 // gardenPlantSeed sets plant on an existing pot; consumes no pot. slot must have pot, plant must be empty.
 func gardenPlantSeed(g *PlayerGarden, slotID, seedItemID string, plantedAtUnix int64) error {
 	sid := strings.TrimSpace(slotID)

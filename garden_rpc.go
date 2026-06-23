@@ -284,6 +284,129 @@ func StorePotInInventoryRPC(
 	return string(raw), nil
 }
 
+type storeLayerPotsPayload struct {
+	SlotID string `json:"slotId"`
+}
+
+type storeLayerPotsResponse struct {
+	Inventory PlayerInventory `json:"inventory"`
+	Garden    PlayerGarden    `json:"garden"`
+}
+
+// StoreLayerPotsInInventoryRPC removes every empty pot in the clicked pot's cloud layer.
+func StoreLayerPotsInInventoryRPC(
+	ctx context.Context,
+	logger runtime.Logger,
+	_ *sql.DB,
+	nk runtime.NakamaModule,
+	payload string,
+) (string, error) {
+	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
+	if !ok || userID == "" {
+		return "", runtime.NewError("unauthorized", 16)
+	}
+
+	var body storeLayerPotsPayload
+	if err := json.Unmarshal([]byte(payload), &body); err != nil {
+		return "", runtime.NewError("invalid JSON payload", 3)
+	}
+
+	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
+		{Collection: playerStateCollection, Key: playerInventoryKey, UserID: userID},
+		{Collection: playerStateCollection, Key: playerGardenKey, UserID: userID},
+	})
+	if err != nil {
+		logger.Error("storage read store layer pots: %v", err)
+		return "", runtime.NewError("failed to load state", 13)
+	}
+
+	inv := defaultPlayerInventory()
+	invVer := ""
+	garden := defaultPlayerGarden()
+	gardenVer := ""
+
+	for _, o := range objs {
+		switch o.GetKey() {
+		case playerInventoryKey:
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
+				return "", runtime.NewError("corrupt inventory", 13)
+			}
+			inv = decoded
+			invVer = o.GetVersion()
+		case playerGardenKey:
+			if err := json.Unmarshal([]byte(o.GetValue()), &garden); err != nil {
+				return "", runtime.NewError("corrupt garden", 13)
+			}
+			if garden.Placements == nil {
+				garden.Placements = []SlotPlacement{}
+			}
+			garden.Placements = normalizeGardenPlacements(garden.Placements)
+			gardenVer = o.GetVersion()
+		}
+	}
+
+	if !storageReadHasKey(objs, playerInventoryKey) {
+		return "", runtime.NewError("inventory not initialized", 9)
+	}
+
+	updateGardenDiseaseState(&garden, nowUnixSeconds())
+
+	gardenCopy := garden
+	potItemIDs, err := gardenRemovePotsInLayer(&gardenCopy, body.SlotID)
+	if err != nil {
+		return "", err
+	}
+
+	invCopy := inv
+	for _, potItemID := range potItemIDs {
+		if err := AddPot(&invCopy, potItemID, 1); err != nil {
+			return "", err
+		}
+	}
+
+	invRaw, err := json.Marshal(invCopy)
+	if err != nil {
+		return "", err
+	}
+	gardenRaw, err := json.Marshal(gardenCopy)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection:      playerStateCollection,
+			Key:             playerInventoryKey,
+			UserID:          userID,
+			Value:           string(invRaw),
+			Version:         invVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+		{
+			Collection:      playerStateCollection,
+			Key:             playerGardenKey,
+			UserID:          userID,
+			Value:           string(gardenRaw),
+			Version:         gardenVer,
+			PermissionRead:  1,
+			PermissionWrite: 0,
+		},
+	})
+	if err != nil {
+		logger.Error("storage write store layer pots: %v", err)
+		return "", runtime.NewError("failed to save (retry)", 13)
+	}
+
+	out := storeLayerPotsResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
 type plantSeedPayload struct {
 	SlotID     string `json:"slotId"`
 	SeedItemID string `json:"seedItemId"`

@@ -85,6 +85,50 @@ func TestGardenRemovePotRejectsPlantedPot(t *testing.T) {
 	}
 }
 
+func TestGardenRemovePotsInLayer(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlacePot(&g, "0_1", "pot_gold"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlacePot(&g, "1_0", "pot_stone"); err != nil {
+		t.Fatal(err)
+	}
+
+	potItemIDs, err := gardenRemovePotsInLayer(&g, "0_7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(potItemIDs) != 2 {
+		t.Fatalf("expected 2 returned pots, got %#v", potItemIDs)
+	}
+	if len(g.Placements) != 1 || g.Placements[0].SlotID != "1_0" || g.Placements[0].PotItemID != "pot_stone" {
+		t.Fatalf("expected only layer 1 pot to remain: %+v", g.Placements)
+	}
+}
+
+func TestGardenRemovePotsInLayerRejectsPlantedPot(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlacePot(&g, "0_1", "pot_gold"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeed(&g, "0_1", "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := gardenRemovePotsInLayer(&g, "0_0"); err == nil {
+		t.Fatal("expected planted layer removal error")
+	}
+	if len(g.Placements) != 2 {
+		t.Fatalf("expected garden unchanged: %+v", g.Placements)
+	}
+}
+
 func TestGardenWaterPlant(t *testing.T) {
 	g := defaultPlayerGarden()
 	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
