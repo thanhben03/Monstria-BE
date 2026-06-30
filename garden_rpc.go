@@ -612,6 +612,7 @@ type harvestPlantResponse struct {
 	Garden    PlayerGarden    `json:"garden"`
 	Reward    harvestReward   `json:"reward"`
 	Resources PlayerResources `json:"resources"`
+	LevelUp   *LevelUpResult  `json:"levelUp,omitempty"`
 }
 
 type destroyDeadPlantPayload struct {
@@ -811,14 +812,22 @@ func HarvestPlantInPotRPC(
 		return "", err
 	}
 
+	var levelUp *LevelUpResult
 	resourcesCopy, resourcesVer, err := readPlayerResources(ctx, nk, userID)
 	if err != nil {
 		logger.Error("read resources before harvest exp: %v", err)
 		return "", runtime.NewError("failed to load resources", 13)
 	}
 	if reward.ExpReward > 0 {
-		if _, err := AddPlayerExp(&resourcesCopy, reward.ExpReward); err != nil {
+		levelUpResult, err := AddPlayerExp(&resourcesCopy, reward.ExpReward)
+		if err != nil {
 			return "", err
+		}
+		if levelUpResult.LeveledUp {
+			if err := GrantLevelUpRewards(&invCopy, levelUpResult); err != nil {
+				return "", err
+			}
+			levelUp = &levelUpResult
 		}
 	}
 
@@ -874,6 +883,7 @@ func HarvestPlantInPotRPC(
 		Garden:    gardenCopy,
 		Reward:    reward,
 		Resources: decoratePlayerResources(resourcesCopy),
+		LevelUp:   levelUp,
 	}
 	raw, err := json.Marshal(out)
 	if err != nil {

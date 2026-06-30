@@ -38,6 +38,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("get_player_resources", GetPlayerResourcesRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("debug_level_up", DebugLevelUpRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("set_player_inventory", SetPlayerInventoryRPC); err != nil {
 		return err
 	}

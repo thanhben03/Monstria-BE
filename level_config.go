@@ -22,8 +22,14 @@ const (
 )
 
 type LevelDefinition struct {
-	Level     int `json:"level"`
-	ExpToNext int `json:"expToNext"`
+	Level     int           `json:"level"`
+	ExpToNext int           `json:"expToNext"`
+	Rewards   []LevelReward `json:"rewards,omitempty"`
+}
+
+type LevelReward struct {
+	ItemID   string `json:"itemId"`
+	Quantity int    `json:"quantity"`
 }
 
 type levelConfig struct {
@@ -185,6 +191,9 @@ func validateLevelDefinitions(defs []LevelDefinition) ([]LevelDefinition, error)
 		if i < len(out)-1 && def.ExpToNext < 1 {
 			return nil, fmt.Errorf("levels[%d].expToNext must be greater than 0 before max level", i)
 		}
+		if err := validateLevelRewards(def.Level, def.Rewards); err != nil {
+			return nil, err
+		}
 		seen[def.Level] = struct{}{}
 	}
 	return out, nil
@@ -201,6 +210,33 @@ func buildExpToNextByLevel(defs []LevelDefinition) map[int]int {
 		out[def.Level] = def.ExpToNext
 	}
 	return out
+}
+
+func validateLevelRewards(level int, rewards []LevelReward) error {
+	for i, reward := range rewards {
+		if strings.TrimSpace(reward.ItemID) == "" {
+			return fmt.Errorf("level %d rewards[%d].itemId is required", level, i)
+		}
+		if reward.Quantity < 1 {
+			return fmt.Errorf("level %d rewards[%d].quantity must be greater than 0", level, i)
+		}
+	}
+	return nil
+}
+
+func levelRewardsForLevel(level int) []LevelReward {
+	for _, def := range levelDefinitions {
+		if def.Level != level {
+			continue
+		}
+
+		rewards := append([]LevelReward(nil), def.Rewards...)
+		for i := range rewards {
+			rewards[i].ItemID = strings.TrimSpace(rewards[i].ItemID)
+		}
+		return rewards
+	}
+	return nil
 }
 
 func expToNextLevel(level int) int {

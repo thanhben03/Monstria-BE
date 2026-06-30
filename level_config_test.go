@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestParseLevelDefinitions(t *testing.T) {
-	raw := []byte(`{"levels":[{"level":2,"expToNext":150},{"level":1,"expToNext":100},{"level":3,"expToNext":0}]}`)
+	raw := []byte(`{"levels":[{"level":2,"expToNext":150,"rewards":[{"itemId":"seed_rose","quantity":2}]},{"level":1,"expToNext":100},{"level":3,"expToNext":0}]}`)
 
 	defs, err := parseLevelDefinitions(raw)
 	if err != nil {
@@ -18,6 +18,9 @@ func TestParseLevelDefinitions(t *testing.T) {
 	if defs[2].Level != 3 || defs[2].ExpToNext != 0 {
 		t.Fatalf("unexpected max level %#v", defs[2])
 	}
+	if len(defs[1].Rewards) != 1 || defs[1].Rewards[0].ItemID != "seed_rose" || defs[1].Rewards[0].Quantity != 2 {
+		t.Fatalf("unexpected rewards %#v", defs[1].Rewards)
+	}
 }
 
 func TestParseLevelDefinitionsRejectsGaps(t *testing.T) {
@@ -25,6 +28,19 @@ func TestParseLevelDefinitionsRejectsGaps(t *testing.T) {
 
 	if _, err := parseLevelDefinitions(raw); err == nil {
 		t.Fatal("expected level gap to be rejected")
+	}
+}
+
+func TestParseLevelDefinitionsRejectsInvalidRewards(t *testing.T) {
+	raw := []byte(`{"levels":[{"level":1,"expToNext":100,"rewards":[{"itemId":"","quantity":1}]},{"level":2,"expToNext":0}]}`)
+
+	if _, err := parseLevelDefinitions(raw); err == nil {
+		t.Fatal("expected empty reward itemId to be rejected")
+	}
+
+	raw = []byte(`{"levels":[{"level":1,"expToNext":100,"rewards":[{"itemId":"seed_rose","quantity":0}]},{"level":2,"expToNext":0}]}`)
+	if _, err := parseLevelDefinitions(raw); err == nil {
+		t.Fatal("expected invalid reward quantity to be rejected")
 	}
 }
 

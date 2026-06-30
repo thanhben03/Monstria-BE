@@ -1,14 +1,14 @@
 {
   "levels": [
     { "level": 1, "expToNext": 100 },
-    { "level": 2, "expToNext": 150 },
-    { "level": 3, "expToNext": 220 },
-    { "level": 4, "expToNext": 320 },
-    { "level": 5, "expToNext": 450 },
-    { "level": 6, "expToNext": 620 },
-    { "level": 7, "expToNext": 840 },
-    { "level": 8, "expToNext": 1100 },
-    { "level": 9, "expToNext": 1400 },
-    { "level": 10, "expToNext": 0 }
+    { "level": 2, "expToNext": 150, "rewards": [{ "itemId": "seed_rose", "quantity": 3 }] },
+    { "level": 3, "expToNext": 220, "rewards": [{ "itemId": "pot_01", "quantity": 1 }] },
+    { "level": 4, "expToNext": 320, "rewards": [{ "itemId": "seed_sunflower", "quantity": 3 }] },
+    { "level": 5, "expToNext": 450, "rewards": [{ "itemId": "decor_chuong_gio", "quantity": 1 }] },
+    { "level": 6, "expToNext": 620, "rewards": [{ "itemId": "seed_tuyetduong", "quantity": 3 }] },
+    { "level": 7, "expToNext": 840, "rewards": [{ "itemId": "pot_02", "quantity": 1 }] },
+    { "level": 8, "expToNext": 1100, "rewards": [{ "itemId": "decor_den_ngoi_sao", "quantity": 1 }] },
+    { "level": 9, "expToNext": 1400, "rewards": [{ "itemId": "seed_rose", "quantity": 5 }] },
+    { "level": 10, "expToNext": 0, "rewards": [{ "itemId": "pot_03", "quantity": 1 }] }
   ]
 }

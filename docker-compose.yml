@@ -21,6 +21,8 @@ services:
   nakama:
     build: .
     container_name: nakama
+    environment:
+      ENABLE_DEBUG_RPCS: "true"
     depends_on:
       postgres:
         condition: service_healthy
