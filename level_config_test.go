@@ -44,6 +44,25 @@ func TestParseLevelDefinitionsRejectsInvalidRewards(t *testing.T) {
 	}
 }
 
+func TestLevelRewardsForLevel(t *testing.T) {
+	previousDefs := levelDefinitions
+	previousExpToNext := expToNextByLevel
+	t.Cleanup(func() {
+		levelDefinitions = previousDefs
+		expToNextByLevel = previousExpToNext
+	})
+
+	setLevelDefinitions([]LevelDefinition{
+		{Level: 1, ExpToNext: 100},
+		{Level: 2, ExpToNext: 0, Rewards: []LevelReward{{ItemID: " seed_rose ", Quantity: 2}}},
+	})
+
+	rewards := levelRewardsForLevel(2)
+	if len(rewards) != 1 || rewards[0].ItemID != "seed_rose" || rewards[0].Quantity != 2 {
+		t.Fatalf("unexpected rewards %#v", rewards)
+	}
+}
+
 func TestDecoratePlayerResources(t *testing.T) {
 	previousDefs := levelDefinitions
 	previousExpToNext := expToNextByLevel

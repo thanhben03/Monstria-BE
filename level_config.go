@@ -95,12 +95,20 @@ func loadLevelDefinitionsFromStorage(ctx context.Context, nk runtime.NakamaModul
 }
 
 func bootstrapLevelDefinitionsStorage(ctx context.Context, nk runtime.NakamaModule) error {
+	if debugRPCsEnabled() {
+		return writeLevelDefinitionsStorageFromFile(ctx, nk)
+	}
+
 	if err := loadLevelDefinitionsFromStorage(ctx, nk); err == nil {
 		return nil
 	} else if !errors.Is(err, errLevelConfigStorageNotFound) {
 		return err
 	}
 
+	return writeLevelDefinitionsStorageFromFile(ctx, nk)
+}
+
+func writeLevelDefinitionsStorageFromFile(ctx context.Context, nk runtime.NakamaModule) error {
 	path, err := resolveLevelConfigPath()
 	if err != nil {
 		return err
