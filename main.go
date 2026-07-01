@@ -97,6 +97,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("place_decor_on_slot", PlaceDecorOnSlotRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("store_decor_in_inventory", StoreDecorInInventoryRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("bau_cua_get_state", BauCuaGetStateRPC); err != nil {
 		return err
 	}

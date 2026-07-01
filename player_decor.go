@@ -71,6 +71,31 @@ func decorPlaceItem(decor *PlayerDecor, slotID string, itemID string) error {
 	return nil
 }
 
+func decorRemoveItem(decor *PlayerDecor, slotID string) (string, error) {
+	slotID = strings.TrimSpace(slotID)
+	if slotID == "" {
+		return "", runtime.NewError("slotId is required", 3)
+	}
+
+	decor.Placements = normalizeDecorPlacements(decor.Placements)
+	for i, p := range decor.Placements {
+		if strings.TrimSpace(p.SlotID) != slotID {
+			continue
+		}
+
+		itemID := strings.TrimSpace(p.ItemID)
+		if itemID == "" {
+			return "", runtime.NewError("decor slot is empty", 3)
+		}
+
+		decor.Placements = append(decor.Placements[:i], decor.Placements[i+1:]...)
+		decor.Placements = normalizeDecorPlacements(decor.Placements)
+		return itemID, nil
+	}
+
+	return "", runtime.NewError("decor slot is empty", 3)
+}
+
 func initPlayerDecor(ctx context.Context, nk runtime.NakamaModule, userID string) error {
 	decor := defaultPlayerDecor()
 	raw, err := json.Marshal(decor)

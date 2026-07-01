@@ -38,3 +38,31 @@ func TestDecorPlaceItemRejectsOccupiedSlot(t *testing.T) {
 		t.Fatalf("unexpected decor state: %#v", decor.Placements)
 	}
 }
+
+func TestDecorRemoveItemReturnsItemAndClearsSlot(t *testing.T) {
+	decor := PlayerDecor{Placements: []DecorPlacement{
+		{SlotID: "0_0", ItemID: "decor_chuong_gio"},
+		{SlotID: "1_0", ItemID: "decor_den_ngoi_sao"},
+	}}
+
+	itemID, err := decorRemoveItem(&decor, "0_0")
+	if err != nil {
+		t.Fatalf("remove decor: %v", err)
+	}
+	if itemID != "decor_chuong_gio" {
+		t.Fatalf("itemID got %q want %q", itemID, "decor_chuong_gio")
+	}
+	if len(decor.Placements) != 1 || decor.Placements[0].SlotID != "1_0" {
+		t.Fatalf("unexpected decor state: %#v", decor.Placements)
+	}
+}
+
+func TestDecorRemoveItemRejectsEmptySlot(t *testing.T) {
+	decor := PlayerDecor{Placements: []DecorPlacement{
+		{SlotID: "0_0", ItemID: "decor_chuong_gio"},
+	}}
+
+	if _, err := decorRemoveItem(&decor, "2_0"); err == nil {
+		t.Fatal("expected empty slot error")
+	}
+}
