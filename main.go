@@ -100,6 +100,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("store_decor_in_inventory", StoreDecorInInventoryRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("store_layer_decors_in_inventory", StoreLayerDecorsInInventoryRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("bau_cua_get_state", BauCuaGetStateRPC); err != nil {
 		return err
 	}

@@ -66,3 +66,31 @@ func TestDecorRemoveItemRejectsEmptySlot(t *testing.T) {
 		t.Fatal("expected empty slot error")
 	}
 }
+func TestDecorRemoveLayerItemsReturnsItemsAndKeepsOtherLayers(t *testing.T) {
+	decor := PlayerDecor{Placements: []DecorPlacement{
+		{SlotID: "0_0", ItemID: "decor_chuong_gio"},
+		{SlotID: "0_1", ItemID: "decor_den_ngoi_sao"},
+		{SlotID: "1_0", ItemID: "decor_khung_tranh"},
+	}}
+
+	itemIDs, err := decorRemoveLayerItems(&decor, "0_4")
+	if err != nil {
+		t.Fatalf("remove layer decor: %v", err)
+	}
+	if len(itemIDs) != 2 {
+		t.Fatalf("itemIDs len got %d want 2: %#v", len(itemIDs), itemIDs)
+	}
+	if itemIDs[0] != "decor_chuong_gio" || itemIDs[1] != "decor_den_ngoi_sao" {
+		t.Fatalf("unexpected itemIDs: %#v", itemIDs)
+	}
+	if len(decor.Placements) != 1 || decor.Placements[0].SlotID != "1_0" {
+		t.Fatalf("unexpected decor state: %#v", decor.Placements)
+	}
+}
+
+func TestDecorRemoveLayerItemsRejectsEmptyLayer(t *testing.T) {
+	decor := PlayerDecor{Placements: []DecorPlacement{{SlotID: "0_0", ItemID: "decor_chuong_gio"}}}
+	if _, err := decorRemoveLayerItems(&decor, "2_0"); err == nil {
+		t.Fatal("expected empty layer error")
+	}
+}

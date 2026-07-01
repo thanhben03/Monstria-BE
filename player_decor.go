@@ -96,6 +96,46 @@ func decorRemoveItem(decor *PlayerDecor, slotID string) (string, error) {
 	return "", runtime.NewError("decor slot is empty", 3)
 }
 
+func decorRemoveLayerItems(decor *PlayerDecor, slotID string) ([]string, error) {
+	layerID := decorLayerID(slotID)
+	if layerID == "" {
+		return nil, runtime.NewError("slotId is required", 3)
+	}
+
+	decor.Placements = normalizeDecorPlacements(decor.Placements)
+	removed := make([]string, 0)
+	remaining := make([]DecorPlacement, 0, len(decor.Placements))
+	for _, p := range decor.Placements {
+		if decorLayerID(p.SlotID) != layerID {
+			remaining = append(remaining, p)
+			continue
+		}
+
+		itemID := strings.TrimSpace(p.ItemID)
+		if itemID != "" {
+			removed = append(removed, itemID)
+		}
+	}
+
+	if len(removed) == 0 {
+		return nil, runtime.NewError("decor layer is empty", 3)
+	}
+
+	decor.Placements = normalizeDecorPlacements(remaining)
+	return removed, nil
+}
+
+func decorLayerID(slotID string) string {
+	slotID = strings.TrimSpace(slotID)
+	if slotID == "" {
+		return ""
+	}
+	if separatorIndex := strings.Index(slotID, "_"); separatorIndex >= 0 {
+		return slotID[:separatorIndex]
+	}
+	return slotID
+}
+
 func initPlayerDecor(ctx context.Context, nk runtime.NakamaModule, userID string) error {
 	decor := defaultPlayerDecor()
 	raw, err := json.Marshal(decor)
