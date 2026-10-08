@@ -116,7 +116,11 @@ func handleAfterAuthenticate(
 		logger.Error("Init player decor failed for user %s: %v", userID, err)
 		return err
 	}
+	if err := initPlayerPets(ctx, nk, userID); err != nil {
+		logger.Error("Init player pets failed for user %s: %v", userID, err)
+		return err
+	}
 
-	logger.Info("Initialized default resources, inventory, garden, cloud layers, and decor for user %s", userID)
+	logger.Info("Initialized default resources, inventory, garden, cloud layers, decor, and pets for user %s", userID)
 	return nil
 }

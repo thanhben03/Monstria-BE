@@ -41,6 +41,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("debug_level_up", DebugLevelUpRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("debug_grant_pet", DebugGrantPetRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("set_player_inventory", SetPlayerInventoryRPC); err != nil {
 		return err
 	}
@@ -92,6 +95,15 @@ func InitModule(
 		return err
 	}
 	if err := initializer.RegisterRpc("get_player_decor", GetPlayerDecorRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("get_player_pets", GetPlayerPetsRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("place_pet_on_layer", PlacePetOnLayerRPC); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("store_pet_in_inventory", StorePetInInventoryRPC); err != nil {
 		return err
 	}
 	if err := initializer.RegisterRpc("place_decor_on_slot", PlaceDecorOnSlotRPC); err != nil {

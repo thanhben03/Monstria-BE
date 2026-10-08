@@ -48,6 +48,9 @@ func SetPlayerInventoryRPC(
 	nk runtime.NakamaModule,
 	payload string,
 ) (string, error) {
+	if !debugRPCsEnabled() {
+		return "", runtime.NewError("debug RPCs are disabled", 7)
+	}
 	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
 	if !ok || userID == "" {
 		return "", runtime.NewError("unauthorized", 16)
