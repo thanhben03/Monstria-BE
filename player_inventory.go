@@ -183,10 +183,15 @@ func ConsumeOnePot(inv *PlayerInventory, itemID string) error {
 
 // ConsumeOneSeed removes one unit of a seed item from the common inventory (mutates inv).
 func ConsumeOneSeed(inv *PlayerInventory, itemID string) error {
+	return ConsumeSeeds(inv, itemID, 1)
+}
+
+// ConsumeSeeds removes quantity units of a seed item from the common inventory (mutates inv).
+func ConsumeSeeds(inv *PlayerInventory, itemID string, quantity int) error {
 	if strings.TrimSpace(itemID) == "" {
 		return runtime.NewError("seedItemId is required", 3)
 	}
-	return consumeInventoryItem(inv, itemID, 1, "not enough seeds in inventory")
+	return consumeInventoryItem(inv, itemID, quantity, "not enough seeds in inventory")
 }
 
 // ConsumeOneItem removes one unit of itemID from the common inventory (mutates inv).

@@ -252,6 +252,56 @@ func gardenPlantSeed(g *PlayerGarden, slotID, seedItemID string, plantedAtUnix i
 	return nil
 }
 
+const maxBatchPlantSlots = 100
+
+// gardenPlantSeeds validates the complete request before committing it to g.
+// This keeps a batch all-or-nothing when one slot is invalid or already planted.
+func gardenPlantSeeds(g *PlayerGarden, slotIDs []string, seedItemID string, plantedAtUnix int64) error {
+	if len(slotIDs) == 0 {
+		return runtime.NewError("slotIds is required", 3)
+	}
+	if len(slotIDs) > maxBatchPlantSlots {
+		return runtime.NewError("too many slots in one request", 3)
+	}
+	seedID := strings.TrimSpace(seedItemID)
+	if seedID == "" {
+		return runtime.NewError("seedItemId is required", 3)
+	}
+
+	placementIndexes := make([]int, 0, len(slotIDs))
+	seen := make(map[string]struct{}, len(slotIDs))
+	for _, slotID := range slotIDs {
+		sid := strings.TrimSpace(slotID)
+		if sid == "" {
+			return runtime.NewError("slotId is required", 3)
+		}
+		if _, exists := seen[sid]; exists {
+			return runtime.NewError("duplicate slotId", 3)
+		}
+		seen[sid] = struct{}{}
+
+		idx := findPlacementIndex(g, sid)
+		if idx < 0 || strings.TrimSpace(g.Placements[idx].PotItemID) == "" {
+			return runtime.NewError("no pot in this slot", 3)
+		}
+		if g.Placements[idx].Plant != nil {
+			return runtime.NewError("pot already has a plant", 3)
+		}
+		placementIndexes = append(placementIndexes, idx)
+	}
+
+	for _, idx := range placementIndexes {
+		g.Placements[idx].Plant = &PotPlant{
+			SeedItemID:       seedID,
+			PlantedAt:        plantedAtUnix,
+			LastCalculatedAt: plantedAtUnix,
+			Health:           defaultPlantHealth,
+		}
+	}
+	g.Placements = normalizeGardenPlacements(g.Placements)
+	return nil
+}
+
 func gardenWaterPlant(g *PlayerGarden, slotID string, wateredAtUnix int64) error {
 	sid := strings.TrimSpace(slotID)
 	if sid == "" {

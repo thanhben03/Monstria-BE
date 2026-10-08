@@ -33,6 +33,22 @@ func TestConsumeOneSeed(t *testing.T) {
 	}
 }
 
+func TestConsumeSeeds(t *testing.T) {
+	inv := PlayerInventory{Items: []InventoryItemStack{{ItemID: "seed_a", Quantity: 5}}}
+	if err := ConsumeSeeds(&inv, "seed_a", 3); err != nil {
+		t.Fatal(err)
+	}
+	if len(inv.Items) != 1 || inv.Items[0].Quantity != 2 {
+		t.Fatalf("got %#v", inv.Items)
+	}
+	if err := ConsumeSeeds(&inv, "seed_a", 3); err == nil {
+		t.Fatal("expected insufficient seeds error")
+	}
+	if inv.Items[0].Quantity != 2 {
+		t.Fatalf("inventory changed after rejected consume: %#v", inv.Items)
+	}
+}
+
 func TestConsumeOnePot(t *testing.T) {
 	inv := PlayerInventory{Items: []InventoryItemStack{
 		{ItemID: "pot_wood", Quantity: 2},

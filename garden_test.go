@@ -50,6 +50,56 @@ func TestGardenPlacePotThenPlant(t *testing.T) {
 	}
 }
 
+func TestGardenPlantSeedsBatch(t *testing.T) {
+	g := defaultPlayerGarden()
+	for _, slotID := range []string{"0_0", "0_1", "0_2"} {
+		if err := gardenPlacePot(&g, slotID, "pot_wood"); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := gardenPlantSeeds(&g, []string{"0_0", "0_1", "0_2"}, "seed_rose", 100); err != nil {
+		t.Fatal(err)
+	}
+	for _, placement := range g.Placements {
+		if placement.Plant == nil || placement.Plant.SeedItemID != "seed_rose" || placement.Plant.PlantedAt != 100 {
+			t.Fatalf("unexpected placement after batch: %+v", placement)
+		}
+	}
+}
+
+func TestGardenPlantSeedsBatchIsAllOrNothing(t *testing.T) {
+	g := defaultPlayerGarden()
+	for _, slotID := range []string{"0_0", "0_1"} {
+		if err := gardenPlacePot(&g, slotID, "pot_wood"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := gardenPlantSeed(&g, "0_1", "seed_sunflower", 50); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := gardenPlantSeeds(&g, []string{"0_0", "0_1"}, "seed_rose", 100); err == nil {
+		t.Fatal("expected occupied pot to reject the batch")
+	}
+	if g.Placements[findPlacementIndex(&g, "0_0")].Plant != nil {
+		t.Fatal("first pot was changed even though the batch failed")
+	}
+}
+
+func TestGardenPlantSeedsBatchRejectsDuplicateSlots(t *testing.T) {
+	g := defaultPlayerGarden()
+	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gardenPlantSeeds(&g, []string{"0_0", "0_0"}, "seed_rose", 100); err == nil {
+		t.Fatal("expected duplicate slot error")
+	}
+	if g.Placements[0].Plant != nil {
+		t.Fatal("garden changed after duplicate slot error")
+	}
+}
+
 func TestGardenRemovePot(t *testing.T) {
 	g := defaultPlayerGarden()
 	if err := gardenPlacePot(&g, "0_0", "pot_wood"); err != nil {

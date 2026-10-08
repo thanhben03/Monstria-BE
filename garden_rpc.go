@@ -417,6 +417,11 @@ type plantSeedResponse struct {
 	Garden    PlayerGarden    `json:"garden"`
 }
 
+type plantSeedsPayload struct {
+	SlotIDs    []string `json:"slotIds"`
+	SeedItemID string   `json:"seedItemId"`
+}
+
 // PlantSeedInPotRPC consumes one seed from inventory and records plant on an existing pot (no pot consumed).
 func PlantSeedInPotRPC(
 	ctx context.Context,
@@ -518,6 +523,111 @@ func PlantSeedInPotRPC(
 	})
 	if err != nil {
 		logger.Error("storage write plant seed: %v", err)
+		return "", runtime.NewError("failed to save (retry)", 13)
+	}
+
+	out := plantSeedResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
+// PlantSeedsInPotsRPC plants one seed in every requested pot and stores inventory
+// and garden in one version-checked write. Any invalid slot rejects the full batch.
+func PlantSeedsInPotsRPC(
+	ctx context.Context,
+	logger runtime.Logger,
+	_ *sql.DB,
+	nk runtime.NakamaModule,
+	payload string,
+) (string, error) {
+	userID, ok := ctx.Value(runtime.RUNTIME_CTX_USER_ID).(string)
+	if !ok || userID == "" {
+		return "", runtime.NewError("unauthorized", 16)
+	}
+
+	var body plantSeedsPayload
+	if err := json.Unmarshal([]byte(payload), &body); err != nil {
+		return "", runtime.NewError("invalid JSON payload", 3)
+	}
+	if len(body.SlotIDs) == 0 {
+		return "", runtime.NewError("slotIds is required", 3)
+	}
+	if len(body.SlotIDs) > maxBatchPlantSlots {
+		return "", runtime.NewError("too many slots in one request", 3)
+	}
+
+	objs, err := nk.StorageRead(ctx, []*runtime.StorageRead{
+		{Collection: playerStateCollection, Key: playerInventoryKey, UserID: userID},
+		{Collection: playerStateCollection, Key: playerGardenKey, UserID: userID},
+	})
+	if err != nil {
+		logger.Error("storage read plant seeds batch: %v", err)
+		return "", runtime.NewError("failed to load state", 13)
+	}
+
+	inv := defaultPlayerInventory()
+	invVer := ""
+	garden := defaultPlayerGarden()
+	gardenVer := ""
+	for _, o := range objs {
+		switch o.GetKey() {
+		case playerInventoryKey:
+			decoded, err := decodePlayerInventory([]byte(o.GetValue()))
+			if err != nil {
+				return "", runtime.NewError("corrupt inventory", 13)
+			}
+			inv = decoded
+			invVer = o.GetVersion()
+		case playerGardenKey:
+			if err := json.Unmarshal([]byte(o.GetValue()), &garden); err != nil {
+				return "", runtime.NewError("corrupt garden", 13)
+			}
+			if garden.Placements == nil {
+				garden.Placements = []SlotPlacement{}
+			}
+			garden.Placements = normalizeGardenPlacements(garden.Placements)
+			gardenVer = o.GetVersion()
+		}
+	}
+	if !storageReadHasKey(objs, playerInventoryKey) {
+		return "", runtime.NewError("inventory not initialized", 9)
+	}
+
+	now := nowUnixSeconds()
+	updateGardenDiseaseState(&garden, now)
+	gardenCopy := garden
+	if err := gardenPlantSeeds(&gardenCopy, body.SlotIDs, body.SeedItemID, now); err != nil {
+		return "", err
+	}
+	invCopy := inv
+	if err := ConsumeSeeds(&invCopy, body.SeedItemID, len(body.SlotIDs)); err != nil {
+		return "", err
+	}
+
+	invRaw, err := json.Marshal(invCopy)
+	if err != nil {
+		return "", err
+	}
+	gardenRaw, err := json.Marshal(gardenCopy)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{
+		{
+			Collection: playerStateCollection, Key: playerInventoryKey, UserID: userID,
+			Value: string(invRaw), Version: invVer, PermissionRead: 1, PermissionWrite: 0,
+		},
+		{
+			Collection: playerStateCollection, Key: playerGardenKey, UserID: userID,
+			Value: string(gardenRaw), Version: gardenVer, PermissionRead: 1, PermissionWrite: 0,
+		},
+	})
+	if err != nil {
+		logger.Error("storage write plant seeds batch: %v", err)
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
