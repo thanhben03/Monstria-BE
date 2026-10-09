@@ -38,6 +38,16 @@ func TestPetPlaceRejectsLockedLayerAndNonPet(t *testing.T) {
 	}
 }
 
+func TestPetPlaceAcceptsAnyPetItem(t *testing.T) {
+	pets := defaultPlayerPets()
+	if err := petPlaceItem(&pets, 0, "pet_dragon", 1); err != nil {
+		t.Fatalf("place arbitrary pet: %v", err)
+	}
+	if len(pets.Placements) != 1 || pets.Placements[0].ItemID != "pet_dragon" {
+		t.Fatalf("unexpected placements: %#v", pets.Placements)
+	}
+}
+
 func TestNormalizePetPlacements(t *testing.T) {
 	placements := normalizePetPlacements([]PetPlacement{
 		{LayerIndex: 2, ItemID: "pet_monkey"},

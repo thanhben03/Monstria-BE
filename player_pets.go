@@ -11,12 +11,6 @@ import (
 
 const playerPetsKey = "pets"
 
-// Pet IDs are validated on the server even when the item is present in inventory.
-// Add new pet IDs here when their client prefabs are ready.
-var petItemIDs = map[string]struct{}{
-	"pet_monkey": {},
-}
-
 type PetPlacement struct {
 	LayerIndex int    `json:"layerIndex"`
 	ItemID     string `json:"itemId"`
@@ -31,8 +25,7 @@ func defaultPlayerPets() PlayerPets {
 }
 
 func isPetItemID(itemID string) bool {
-	_, ok := petItemIDs[strings.TrimSpace(itemID)]
-	return ok
+	return strings.HasPrefix(strings.TrimSpace(itemID), "pet_")
 }
 
 func normalizePetPlacements(placements []PetPlacement) []PetPlacement {
