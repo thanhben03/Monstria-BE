@@ -1,0 +1,6 @@
+{
+  "pets": [
+    { "id": "pet_monkey", "name": "Monkey", "description": "Chú khỉ tinh nghịch, thích chuyền cành và khám phá khu vườn trên mây.", "rarity": "R" },
+    { "id": "pet_fox", "name": "Fox", "description": "Chú cáo lanh lợi với chiếc đuôi bồng bềnh, mang nét duyên dáng đến khu vườn trên mây.", "rarity": "SR" }
+  ]
+}

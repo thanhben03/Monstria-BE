@@ -16,6 +16,12 @@ func InitModule(
 ) error {
 
 	logger.Info("Module loaded!")
+	if err := bootstrapPetCatalog(ctx, nk); err != nil {
+		return err
+	}
+	if err := initializer.RegisterRpc("get_pet_catalog", GetPetCatalogRPC); err != nil {
+		return err
+	}
 
 	if err := bootstrapFlowerDefinitionsStorage(ctx, nk); err != nil {
 		return err

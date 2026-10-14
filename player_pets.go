@@ -25,7 +25,13 @@ func defaultPlayerPets() PlayerPets {
 }
 
 func isPetItemID(itemID string) bool {
-	return strings.HasPrefix(strings.TrimSpace(itemID), "pet_")
+	itemID = strings.TrimSpace(itemID)
+	for _, pet := range petCatalog.Pets {
+		if pet.ID == itemID {
+			return true
+		}
+	}
+	return false
 }
 
 func normalizePetPlacements(placements []PetPlacement) []PetPlacement {
