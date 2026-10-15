@@ -208,6 +208,12 @@ func validateLevelDefinitions(defs []LevelDefinition) ([]LevelDefinition, error)
 }
 
 func setLevelDefinitions(defs []LevelDefinition) {
+	masterDataMu.Lock()
+	defer masterDataMu.Unlock()
+	setLevelDefinitionsLocked(defs)
+}
+
+func setLevelDefinitionsLocked(defs []LevelDefinition) {
 	levelDefinitions = append([]LevelDefinition(nil), defs...)
 	expToNextByLevel = buildExpToNextByLevel(levelDefinitions)
 }
@@ -233,6 +239,8 @@ func validateLevelRewards(level int, rewards []LevelReward) error {
 }
 
 func levelRewardsForLevel(level int) []LevelReward {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	for _, def := range levelDefinitions {
 		if def.Level != level {
 			continue
@@ -248,6 +256,8 @@ func levelRewardsForLevel(level int) []LevelReward {
 }
 
 func expToNextLevel(level int) int {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	if level < 1 {
 		level = 1
 	}

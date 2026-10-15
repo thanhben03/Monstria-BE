@@ -269,6 +269,12 @@ func normalizeDiseaseTypes(in []string) []string {
 }
 
 func setFlowerDefinitions(defs []FlowerDefinition) {
+	masterDataMu.Lock()
+	defer masterDataMu.Unlock()
+	setFlowerDefinitionsLocked(defs)
+}
+
+func setFlowerDefinitionsLocked(defs []FlowerDefinition) {
 	flowerDefinitions = append([]FlowerDefinition(nil), defs...)
 	flowerDefinitionBySeed = buildFlowerDefinitionBySeed(flowerDefinitions)
 }
@@ -289,6 +295,8 @@ func buildFlowerDefinitionBySeed(defs []FlowerDefinition) map[string]FlowerDefin
 }
 
 func listFlowerDefinitions() []FlowerDefinition {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	out := append([]FlowerDefinition(nil), flowerDefinitions...)
 	sort.Slice(out, func(i, j int) bool {
 		return out[i].SeedItemID < out[j].SeedItemID
@@ -297,6 +305,8 @@ func listFlowerDefinitions() []FlowerDefinition {
 }
 
 func flowerDefinitionForSeed(seedItemID string) (FlowerDefinition, error) {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	seedID := strings.TrimSpace(seedItemID)
 	if seedID == "" {
 		return FlowerDefinition{}, runtime.NewError("seedItemId is required", 3)

@@ -151,11 +151,7 @@ func BauCuaGetStateRPC(
 		logger.Error("read bau cua inventory: %v", err)
 		return "", runtime.NewError("failed to load bau cua state", 13)
 	}
-	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
-	if err != nil {
-		logger.Warn("read shop catalog for bau cua display names: %v", err)
-		definitions = nil
-	}
+	definitions := listShopItemDefinitions()
 
 	out := buildBauCuaStateResponse(round, bets, userID, buildBauCuaBetItems(inv, definitions))
 	raw, err := json.Marshal(out)
@@ -239,11 +235,7 @@ func BauCuaPlaceBetRPC(
 		return "", runtime.NewError("failed to save bet (retry)", 13)
 	}
 
-	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
-	if err != nil {
-		logger.Warn("read shop catalog for bau cua display names: %v", err)
-		definitions = nil
-	}
+	definitions := listShopItemDefinitions()
 	bets, err := readAllBauCuaBets(ctx, nk, round.RoundID)
 	if err != nil {
 		logger.Error("read all bets after bau cua bet: %v", err)

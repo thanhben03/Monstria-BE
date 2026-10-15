@@ -25,6 +25,8 @@ func defaultPlayerPets() PlayerPets {
 }
 
 func isPetItemID(itemID string) bool {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	itemID = strings.TrimSpace(itemID)
 	for _, pet := range petCatalog.Pets {
 		if pet.ID == itemID {

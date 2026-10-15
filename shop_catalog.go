@@ -368,6 +368,12 @@ func hasShopPriceLevelPrice(priceLevels []ShopPriceLevelDefinition) bool {
 }
 
 func setShopItemDefinitions(defs []ShopItemDefinition) {
+	masterDataMu.Lock()
+	defer masterDataMu.Unlock()
+	setShopItemDefinitionsLocked(defs)
+}
+
+func setShopItemDefinitionsLocked(defs []ShopItemDefinition) {
 	shopItemDefinitions = append([]ShopItemDefinition(nil), defs...)
 	shopItemDefinitionByID = buildShopItemDefinitionByID(shopItemDefinitions)
 }
@@ -397,6 +403,8 @@ func buildShopItemDefinitionByID(defs []ShopItemDefinition) map[string]ShopItemD
 }
 
 func listShopItemDefinitions() []ShopItemDefinition {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	return sortShopItemDefinitions(shopItemDefinitions)
 }
 
@@ -422,6 +430,8 @@ func groupShopItemDefinitionsByCategory(defs []ShopItemDefinition) map[string][]
 }
 
 func listShopItemDefinitionsForCategory(category string) []ShopItemDefinition {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	return listShopItemDefinitionsForCategoryFrom(shopItemDefinitions, category)
 }
 
@@ -505,6 +515,8 @@ func shopCategoryForGrantType(grantType string) string {
 }
 
 func shopItemDefinitionForID(shopItemID string) (ShopItemDefinition, error) {
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	return shopItemDefinitionForIDFrom(shopItemDefinitions, shopItemID)
 }
 

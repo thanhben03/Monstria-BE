@@ -15,6 +15,10 @@ func InitModule(
 	initializer runtime.Initializer,
 ) error {
 
+	if err := initializer.RegisterRpc("reload_master_data", ReloadMasterDataRPC); err != nil {
+		return err
+	}
+
 	logger.Info("Module loaded!")
 	if err := bootstrapPetCatalog(ctx, nk); err != nil {
 		return err

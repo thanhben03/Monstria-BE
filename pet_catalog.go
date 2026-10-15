@@ -59,7 +59,9 @@ func bootstrapPetCatalog(ctx context.Context, nk runtime.NakamaModule) error {
 		if err != nil {
 			return err
 		}
+		masterDataMu.Lock()
 		petCatalog = catalog
+		masterDataMu.Unlock()
 		return nil
 	}
 	_, err = nk.StorageWrite(ctx, []*runtime.StorageWrite{{Collection: "catalog", Key: "pet_catalog", UserID: "", Value: string(defaultPetCatalog), Version: "*", PermissionRead: 2, PermissionWrite: 0}})
@@ -70,6 +72,8 @@ func GetPetCatalogRPC(ctx context.Context, _ runtime.Logger, _ *sql.DB, _ runtim
 	if _, err := petUserID(ctx); err != nil {
 		return "", err
 	}
+	masterDataMu.RLock()
+	defer masterDataMu.RUnlock()
 	raw, err := json.Marshal(petCatalog)
 	return string(raw), err
 }

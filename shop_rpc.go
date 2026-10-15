@@ -66,11 +66,7 @@ func GetShopCatalogRPC(
 		}
 	}
 
-	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
-	if err != nil {
-		logger.Error("read shop catalog storage: %v", err)
-		return "", runtime.NewError("failed to load shop catalog", 13)
-	}
+	definitions := listShopItemDefinitions()
 
 	category := strings.TrimSpace(strings.ToLower(body.Category))
 	defs := listShopItemDefinitionsForCategoryFrom(definitions, category)
@@ -113,11 +109,7 @@ func GetShopItemRPC(
 		return "", runtime.NewError("invalid JSON payload", 3)
 	}
 
-	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
-	if err != nil {
-		logger.Error("read shop item storage: %v", err)
-		return "", runtime.NewError("failed to load shop item", 13)
-	}
+	definitions := listShopItemDefinitions()
 
 	def, err := shopItemDefinitionForIDFrom(definitions, body.ShopItemID)
 	if err != nil {
@@ -156,11 +148,7 @@ func PurchaseShopItemRPC(
 		return "", runtime.NewError("invalid JSON payload", 3)
 	}
 
-	definitions, err := readShopItemDefinitionsFromStorage(ctx, nk)
-	if err != nil {
-		logger.Error("read shop catalog storage purchase: %v", err)
-		return "", runtime.NewError("failed to load shop catalog", 13)
-	}
+	definitions := listShopItemDefinitions()
 
 	def, err := shopItemDefinitionForIDFrom(definitions, body.ShopItemID)
 	if err != nil {
