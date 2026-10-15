@@ -23,6 +23,7 @@ services:
     container_name: nakama
     environment:
       ENABLE_DEBUG_RPCS: "true"
+      MASTER_DATA_DIR: "${MASTER_DATA_DIR:-/nakama/data/modules}"
       MASTER_DATA_ADMIN_USER_IDS: "${MASTER_DATA_ADMIN_USER_IDS:-}"
     depends_on:
       postgres:

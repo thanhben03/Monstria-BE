@@ -7,6 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/heroiclabs/nakama-common/runtime"
@@ -21,8 +24,9 @@ var masterDataReloadMu sync.Mutex
 var masterDataKeys = []string{"flower_catalog", "level_config", "shop_catalog", "pet_catalog"}
 
 type masterDataReloadResult struct {
-	Version string         `json:"version"`
-	Counts  map[string]int `json:"counts"`
+	Version   string         `json:"version"`
+	Counts    map[string]int `json:"counts"`
+	Directory string         `json:"directory"`
 }
 
 func authorizeMasterDataReload(ctx context.Context) error {
@@ -49,25 +53,29 @@ func ReloadMasterDataRPC(ctx context.Context, logger runtime.Logger, _ *sql.DB, 
 }
 
 func reloadMasterData(ctx context.Context, nk runtime.NakamaModule) (masterDataReloadResult, error) {
+	return reloadMasterDataFromDirectory(ctx, nk, masterDataDirectory())
+}
+
+func masterDataDirectory() string {
+	if dir := strings.TrimSpace(os.Getenv("MASTER_DATA_DIR")); dir != "" {
+		return dir
+	}
+	return "/nakama/data/modules"
+}
+
+func reloadMasterDataFromDirectory(ctx context.Context, nk runtime.NakamaModule, directory string) (masterDataReloadResult, error) {
 	masterDataReloadMu.Lock()
 	defer masterDataReloadMu.Unlock()
 	var result masterDataReloadResult
-	reads := make([]*runtime.StorageRead, 0, len(masterDataKeys))
+	result.Directory = directory
+	values := make(map[string][]byte, len(masterDataKeys))
 	for _, key := range masterDataKeys {
-		reads = append(reads, &runtime.StorageRead{Collection: "catalog", Key: key, UserID: ""})
-	}
-	objects, err := nk.StorageRead(ctx, reads)
-	if err != nil {
-		return result, fmt.Errorf("read catalog storage: %w", err)
-	}
-	values := make(map[string][]byte, len(objects))
-	for _, object := range objects {
-		values[object.Key] = []byte(object.Value)
-	}
-	for _, key := range masterDataKeys {
-		if len(values[key]) == 0 {
-			return result, fmt.Errorf("missing catalog/%s", key)
+		path := filepath.Join(directory, key+".json")
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return result, fmt.Errorf("read %s: %w", path, err)
 		}
+		values[key] = raw
 	}
 	flowers, err := parseFlowerDefinitions(values["flower_catalog"])
 	if err != nil {
@@ -84,6 +92,14 @@ func reloadMasterData(ctx context.Context, nk runtime.NakamaModule) (masterDataR
 	pets, err := parsePetCatalog(values["pet_catalog"])
 	if err != nil {
 		return result, fmt.Errorf("pet_catalog: %w", err)
+	}
+	// Persist one validated batch before publishing the in-memory catalogs.
+	writes := make([]*runtime.StorageWrite, 0, len(masterDataKeys))
+	for _, key := range masterDataKeys {
+		writes = append(writes, &runtime.StorageWrite{Collection: "catalog", Key: key, UserID: "", Value: string(values[key]), PermissionRead: 2, PermissionWrite: 0})
+	}
+	if _, err := nk.StorageWrite(ctx, writes); err != nil {
+		return result, fmt.Errorf("persist catalog files: %w", err)
 	}
 	hash := sha256.New()
 	for _, key := range masterDataKeys {
