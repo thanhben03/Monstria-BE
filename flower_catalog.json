@@ -26,6 +26,33 @@
       "rewardQuantity": 1,
       "expReward": 25,
       "disease": ["borua"]
+    },
+    {
+      "seedItemId": "seed_linhsuong",
+      "flowerItemId": "flower_linhsuong",
+      "growSeconds": 60,
+      "rewardItemId": "flower_linhsuong",
+      "rewardQuantity": 1,
+      "expReward": 25,
+      "disease": ["borua"]
+    },
+    {
+      "seedItemId": "seed_mattroi",
+      "flowerItemId": "flower_mattroi",
+      "growSeconds": 60,
+      "rewardItemId": "flower_mattroi",
+      "rewardQuantity": 1,
+      "expReward": 25,
+      "disease": ["borua"]
+    },
+    {
+      "seedItemId": "seed_duahaubiendi",
+      "flowerItemId": "flower_duahaubiendi",
+      "growSeconds": 10,
+      "rewardItemId": "flower_duahaubiendi",
+      "rewardQuantity": 1,
+      "expReward": 25,
+      "disease": ["borua"]
     }
   ]
 }

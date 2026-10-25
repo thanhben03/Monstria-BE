@@ -1,6 +1,8 @@
 {
   "pets": [
-    { "id": "pet_monkey", "name": "Monkey", "description": "Chú khỉ tinh nghịch, thích chuyền cành và khám phá khu vườn trên mây.", "rarity": "SSR" },
-    { "id": "pet_fox", "name": "Fox", "description": "Chú cáo lanh lợi với chiếc đuôi bồng bềnh, mang nét duyên dáng đến khu vườn trên mây.", "rarity": "SR" }
+    { "id": "pet_monkey", "name": "Monkey", "description": "Chú khỉ tinh nghịch, thích chuyền cành và khám phá khu vườn trên mây.", "rarity": "SR" },
+    { "id": "pet_fox", "name": "Fox", "description": "Chú cáo lanh lợi với chiếc đuôi bồng bềnh, mang nét duyên dáng đến khu vườn trên mây.", "rarity": "SR" },
+    { "id": "pet_meomay", "name": "Mèo Mây", "description": "Chú mèo dễ thương với bộ lông mềm mại, thích chơi đùa và ngủ thiến trong góc vườn.", "rarity": "R" },
+    { "id": "pet_shiba", "name": "Chó Shiba", "description": "Chú chó Shiba dễ thương với bộ lông mềm mại, thích chơi đùa và ngủ thiến trong góc vườn.", "rarity": "R" }
   ]
 }

@@ -168,7 +168,7 @@ func updateGardenDiseaseStateWithRoller(g *PlayerGarden, nowUnix int64, roll dis
 }
 
 func rollDiseaseForPlant(def FlowerDefinition, at int64, plant *PotPlant, roll diseaseRoller) (PlantDisease, bool) {
-	candidates := diseaseCandidatesForProgress(def, at, plant.GrowthStartedAt)
+	candidates := diseaseCandidatesForProgressWithReduction(def, at, plant.GrowthStartedAt, plant.GrowthReductionSeconds)
 	if len(candidates) == 0 {
 		return PlantDisease{}, false
 	}
@@ -191,10 +191,14 @@ func rollDiseaseForPlant(def FlowerDefinition, at int64, plant *PotPlant, roll d
 }
 
 func diseaseCandidatesForProgress(def FlowerDefinition, at int64, growthStartedAt int64) []DiseaseDefinition {
+	return diseaseCandidatesForProgressWithReduction(def, at, growthStartedAt, 0)
+}
+
+func diseaseCandidatesForProgressWithReduction(def FlowerDefinition, at int64, growthStartedAt int64, reduction float64) []DiseaseDefinition {
 	if def.GrowSeconds < 1 || growthStartedAt < 1 {
 		return nil
 	}
-	progress := int((at - growthStartedAt) * 100 / def.GrowSeconds)
+	progress := int((float64(at-growthStartedAt) + reduction) * 100 / float64(def.GrowSeconds))
 	if progress < 0 {
 		progress = 0
 	}

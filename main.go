@@ -91,6 +91,9 @@ func InitModule(
 	if err := initializer.RegisterRpc("purchase_shop_item", PurchaseShopItemRPC); err != nil {
 		return err
 	}
+	if err := initializer.RegisterRpc("fertilize_plant_in_pot", FertilizePlantInPotRPC); err != nil {
+		return err
+	}
 	if err := initializer.RegisterRpc("harvest_plant_in_pot", HarvestPlantInPotRPC); err != nil {
 		return err
 	}

@@ -16,6 +16,8 @@ const (
 
 // PotPlant is optional flower state in a placed pot (after player uses a seed).
 type PotPlant struct {
+	Fertilized             bool          `json:"fertilized,omitempty"`
+	GrowthReductionSeconds float64       `json:"growthReductionSeconds,omitempty"`
 	SeedItemID             string        `json:"seedItemId"`
 	PlantedAt              int64         `json:"plantedAt"` // Unix seconds (server time)
 	WateredAt              int64         `json:"wateredAt,omitempty"`
@@ -354,8 +356,8 @@ func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestR
 		return harvestReward{}, runtime.NewError("plant needs water", 3)
 	}
 
-	harvestAt := plant.GrowthStartedAt + def.GrowSeconds
-	if nowUnix < harvestAt {
+	harvestAt := float64(plant.GrowthStartedAt+def.GrowSeconds) - plant.GrowthReductionSeconds
+	if float64(nowUnix) < harvestAt {
 		return harvestReward{}, runtime.NewError("plant is not ready", 3)
 	}
 
