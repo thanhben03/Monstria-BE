@@ -268,6 +268,21 @@ func normalizeDiseaseTypes(in []string) []string {
 	return out
 }
 
+func validateFlowerDiseaseReferences(defs []FlowerDefinition) error {
+	known := make(map[string]bool, len(diseaseDefinitions))
+	for _, disease := range diseaseDefinitions {
+		known[disease.Type] = true
+	}
+	for _, flower := range defs {
+		for _, diseaseType := range flower.Disease {
+			if !known[diseaseType] {
+				return fmt.Errorf("seed %q references undefined disease %q; update flower_catalog.json and call reload_master_data, or define this species in diseaseDefinitions", flower.SeedItemID, diseaseType)
+			}
+		}
+	}
+	return nil
+}
+
 func setFlowerDefinitions(defs []FlowerDefinition) {
 	masterDataMu.Lock()
 	defer masterDataMu.Unlock()

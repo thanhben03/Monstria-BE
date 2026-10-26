@@ -30,6 +30,9 @@ func InitModule(
 	if err := bootstrapFlowerDefinitionsStorage(ctx, nk); err != nil {
 		return err
 	}
+	if err := validateFlowerDiseaseReferences(listFlowerDefinitions()); err != nil {
+		logger.Warn("Active flower catalog cannot spawn some diseases: %v. Startup prefers persisted catalog Storage over the bundled JSON.", err)
+	}
 	if err := bootstrapShopItemDefinitionsStorage(ctx, nk); err != nil {
 		return err
 	}

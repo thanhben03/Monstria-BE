@@ -81,6 +81,9 @@ func reloadMasterDataFromDirectory(ctx context.Context, nk runtime.NakamaModule,
 	if err != nil {
 		return result, fmt.Errorf("flower_catalog: %w", err)
 	}
+	if err := validateFlowerDiseaseReferences(flowers); err != nil {
+		return result, fmt.Errorf("flower_catalog: %w", err)
+	}
 	levels, err := parseLevelDefinitions(values["level_config"])
 	if err != nil {
 		return result, fmt.Errorf("level_config: %w", err)

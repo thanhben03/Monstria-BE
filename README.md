@@ -71,8 +71,10 @@ mount keeps the host files available.
 
 Missing/unreadable files, invalid catalogs, or a failed Storage write prevent
 cache publication. Validation errors do not write Storage. Fix the reported file
-and retry. Reload does not migrate existing player state or validate every
-cross-catalog reference; preserve IDs referenced by existing players.
+and retry. Reload does not migrate existing player state. Flower disease IDs
+are checked against `diseaseDefinitions` before any Storage write; other
+cross-catalog references are not all validated. Preserve IDs referenced by
+existing players.
 
 Shop and bau cua use the active cache too. Clients caching catalogs should fetch
 them again after successful reload. To roll back, upload the previous JSON files
@@ -87,6 +89,23 @@ Startup behavior is unchanged: it generally loads persisted Storage, but debug
 mode reseeds level data from the bundled level JSON. Keep release JSON in sync
 before restarting. `MASTER_DATA_DIR` controls this reload RPC, not the existing
 startup catalog path settings.
+
+### Plants stop spawning bugs after changing species
+
+Startup prefers `catalog/flower_catalog` in Storage. Rebuilding the plugin or
+editing the bundled JSON does not normally replace an existing stored catalog.
+For example, stored `borua`/`bocanhcung` references will match no candidates if
+the configured species are only `buom`/`chuonchuon`. Species IDs remain distinct;
+there is no automatic aliasing between these insects.
+
+Upload the updated `flower_catalog.json` into `MASTER_DATA_DIR` inside the
+running container, then call `reload_master_data` as described above. Verify
+`get_flower_catalog` returns the intended disease IDs. Startup now warns about
+undefined species, and reload rejects undefined disease references.
+
+Test with newly planted, watered plants: ticks already processed with the old
+catalog are not replayed. Bug spawning is probabilistic, and plants which have
+already had a disease do not get another during the same crop.
 
 ### Checks
 
