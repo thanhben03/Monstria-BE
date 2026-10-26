@@ -7,7 +7,7 @@
       "rewardItemId": "flower_rose",
       "rewardQuantity": 1,
       "expReward": 20,
-      "disease": ["borua"]
+      "disease": ["buom"]
     },
     {
       "seedItemId": "seed_sunflower",
@@ -16,7 +16,7 @@
       "rewardItemId": "flower_sunflower",
       "rewardQuantity": 1,
       "expReward": 35,
-      "disease": ["bocanhcung"]
+      "disease": ["chuonchuon"]
     },
     {
       "seedItemId": "seed_tuyetduong",
@@ -25,7 +25,7 @@
       "rewardItemId": "flower_tuyetduong",
       "rewardQuantity": 1,
       "expReward": 25,
-      "disease": ["borua"]
+      "disease": ["buom"]
     },
     {
       "seedItemId": "seed_linhsuong",
@@ -34,7 +34,7 @@
       "rewardItemId": "flower_linhsuong",
       "rewardQuantity": 1,
       "expReward": 25,
-      "disease": ["borua"]
+      "disease": ["buom"]
     },
     {
       "seedItemId": "seed_mattroi",
@@ -43,7 +43,7 @@
       "rewardItemId": "flower_mattroi",
       "rewardQuantity": 1,
       "expReward": 25,
-      "disease": ["borua"]
+      "disease": ["chuonchuon"]
     },
     {
       "seedItemId": "seed_duahaubiendi",
@@ -52,7 +52,7 @@
       "rewardItemId": "flower_duahaubiendi",
       "rewardQuantity": 1,
       "expReward": 25,
-      "disease": ["borua"]
+      "disease": ["buom"]
     }
   ]
 }

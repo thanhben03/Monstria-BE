@@ -303,8 +303,8 @@ func TestGardenDiseaseStateCanInfectAndDamagePlant(t *testing.T) {
 	}
 
 	plant := g.Placements[0].Plant
-	if plant.Disease == nil || plant.Disease.Type != "borua" {
-		t.Fatalf("expected borua disease, got %+v", plant.Disease)
+	if plant.Disease == nil || plant.Disease.Type != "buom" {
+		t.Fatalf("expected buom disease, got %+v", plant.Disease)
 	}
 	if !plant.DiseaseOccurred {
 		t.Fatalf("expected disease occurrence to be recorded")
@@ -361,7 +361,7 @@ func TestGardenTreatPlantDisease(t *testing.T) {
 	if err := gardenPlantSeed(&g, "0_0", "seed_rose", 100); err != nil {
 		t.Fatal(err)
 	}
-	g.Placements[0].Plant.Disease = &PlantDisease{Type: "borua", Severity: 1, StartedAt: 200}
+	g.Placements[0].Plant.Disease = &PlantDisease{Type: "buom", Severity: 1, StartedAt: 200}
 	g.Placements[0].Plant.DiseaseOccurred = true
 
 	if err := gardenTreatPlantDisease(&g, "0_0", "item_pesticide", 300); err != nil {

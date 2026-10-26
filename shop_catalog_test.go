@@ -87,7 +87,7 @@ func TestShopItemDefinitionForIDReturnsMetadata(t *testing.T) {
 			HarvestQuantity: 1,
 			WaterNeed:       "ít",
 			ExpReward:       10,
-			AttractedBugs:   []string{"bọ rùa", "ong"},
+			AttractedBugs:   []string{"bướm", "chuồn chuồn"},
 			Desc:            "Hoa hồng test",
 			GoldPerHour:     5,
 		},
@@ -103,7 +103,7 @@ func TestShopItemDefinitionForIDReturnsMetadata(t *testing.T) {
 	if got.CoinPrice != 500 || got.GemPrice != 5 || got.GoldPerHour != 5 {
 		t.Fatalf("unexpected prices/reward %#v", got)
 	}
-	if len(got.AttractedBugs) != 2 || got.AttractedBugs[0] != "bọ rùa" || got.AttractedBugs[1] != "ong" {
+	if len(got.AttractedBugs) != 2 || got.AttractedBugs[0] != "bướm" || got.AttractedBugs[1] != "chuồn chuồn" {
 		t.Fatalf("unexpected bugs %#v", got.AttractedBugs)
 	}
 }
@@ -116,12 +116,12 @@ func TestShopItemDefinitionWithDetailTextForSeed(t *testing.T) {
 		HarvestQuantity: 1,
 		WaterNeed:       "Ít",
 		ExpReward:       10,
-		AttractedBugs:   []string{"Bọ rùa", "ong"},
+		AttractedBugs:   []string{"Bướm", "chuồn chuồn"},
 		Desc:            "Hoa này dễ trồng.",
 	})
 
 	wantMain := "Tăng trưởng: <color=#00FF00>14:00:00</color>\nCấp độ: <color=#FF66FF>2</color>\nTổng thu hoạch: <color=#FFFF00>1</color>"
-	wantSide := "Cần nước: <color=#66CCFF>Ít</color>\nKinh nghiệm: <color=#FFFF00>10</color>\nThu hút sâu: <color=#FF3333>Bọ rùa, ong</color>\n\n<color=#FF33CC>Hoa này dễ trồng.</color>"
+	wantSide := "Cần nước: <color=#66CCFF>Ít</color>\nKinh nghiệm: <color=#FFFF00>10</color>\nThu hút sâu: <color=#FF3333>Bướm, chuồn chuồn</color>\n\n<color=#FF33CC>Hoa này dễ trồng.</color>"
 	if def.DetailMainText != wantMain {
 		t.Fatalf("main text:\n%s", def.DetailMainText)
 	}

@@ -28,7 +28,7 @@ func TestFlowerDefinitionForSeed(t *testing.T) {
 	if def.RewardItemID != "flower_rose" || def.RewardQuantity != 1 || def.GrowSeconds != 60 || def.ExpReward != 20 {
 		t.Fatalf("got %#v", def)
 	}
-	if len(def.Disease) != 1 || def.Disease[0] != "borua" {
+	if len(def.Disease) != 1 || def.Disease[0] != "buom" {
 		t.Fatalf("got disease config %#v", def.Disease)
 	}
 

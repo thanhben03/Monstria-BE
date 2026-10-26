@@ -803,12 +803,8 @@ func TreatPlantDiseaseRPC(
 	now := nowUnixSeconds()
 	gardenCopy := garden
 	updateGardenDiseaseState(&gardenCopy, now)
-	if err := gardenTreatPlantDisease(&gardenCopy, body.SlotID, body.ItemID, now); err != nil {
-		return "", err
-	}
-
 	invCopy := inv
-	if err := ConsumeOneItem(&invCopy, body.ItemID); err != nil {
+	if err := treatAndCollectBug(&gardenCopy, &invCopy, body.SlotID, body.ItemID, now); err != nil {
 		return "", err
 	}
 

@@ -37,7 +37,7 @@ type TreatmentItemDefinition struct {
 
 var diseaseDefinitions = []DiseaseDefinition{
 	{
-		Type:              "borua",
+		Type:              "buom",
 		MinGrowthProgress: 25,
 		MaxGrowthProgress: 85,
 		RiskPerTickBps:    2500,
@@ -45,7 +45,7 @@ var diseaseDefinitions = []DiseaseDefinition{
 		DamagePerTick:     4,
 	},
 	{
-		Type:              "bocanhcung",
+		Type:              "chuonchuon",
 		MinGrowthProgress: 60,
 		MaxGrowthProgress: 100,
 		RiskPerTickBps:    1800,
@@ -241,6 +241,35 @@ func diseaseDamagePerTick(diseaseType string) int {
 		}
 	}
 	return 1
+}
+
+func treatAndCollectBug(g *PlayerGarden, inv *PlayerInventory, slotID, itemID string, now int64) error {
+	idx := findPlacementIndex(g, strings.TrimSpace(slotID))
+	if idx < 0 || g.Placements[idx].Plant == nil {
+		return runtime.NewError("no plant in this slot", 3)
+	}
+	plant := g.Placements[idx].Plant
+	if plant.Health < 1 || plant.Disease == nil {
+		return runtime.NewError("no living plant with a bug in this slot", 3)
+	}
+	bugType := strings.TrimSpace(plant.Disease.Type)
+	knownBug := false
+	for _, definition := range diseaseDefinitions {
+		if definition.Type == bugType {
+			knownBug = true
+			break
+		}
+	}
+	if !knownBug {
+		return runtime.NewError("unknown bug type", 3)
+	}
+	if err := gardenTreatPlantDisease(g, slotID, itemID, now); err != nil {
+		return err
+	}
+	if err := ConsumeOneItem(inv, itemID); err != nil {
+		return err
+	}
+	return AddInventoryItem(inv, "bug_"+bugType, 1)
 }
 
 func gardenTreatPlantDisease(g *PlayerGarden, slotID string, itemID string, nowUnix int64) error {

@@ -419,8 +419,8 @@
 				"waterNeed": "ít",
 				"expReward": 10,
 				"attractedBugs": [
-					"bọ rùa",
-					"ong"
+					"bướm",
+					"chuồn chuồn"
 				],
 				"desc": "Hạt giống hoa hồng dễ trồng, phù hợp cho người chơi mới.",
 				"goldPerHour": 5
@@ -438,7 +438,7 @@
 				"waterNeed": "Rất nhiều",
 				"expReward": 10,
 				"attractedBugs": [
-					"bọ rùa"
+					"bướm"
 				],
 				"desc": "Hạt giống hoa hướng dương dễ trồng, phù hợp cho người chơi mới.",
 				"goldPerHour": 5
