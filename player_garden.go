@@ -361,9 +361,13 @@ func gardenHarvestPlant(g *PlayerGarden, slotID string, nowUnix int64) (harvestR
 		return harvestReward{}, runtime.NewError("plant is not ready", 3)
 	}
 
+	bugReward, err := bugRewardForDisease(plant.Disease)
+	if err != nil {
+		return harvestReward{}, err
+	}
 	g.Placements[idx].Plant = nil
 	g.Placements = normalizeGardenPlacements(g.Placements)
-	return harvestReward{ItemID: def.RewardItemID, Quantity: def.RewardQuantity, ExpReward: def.ExpReward}, nil
+	return harvestReward{ItemID: def.RewardItemID, Quantity: def.RewardQuantity, ExpReward: def.ExpReward, BugReward: bugReward}, nil
 }
 
 func gardenDestroyDeadPlant(g *PlayerGarden, slotID string, nowUnix int64) error {

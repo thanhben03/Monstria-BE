@@ -712,17 +712,19 @@ type harvestPlantPayload struct {
 }
 
 type harvestReward struct {
-	ItemID    string `json:"itemId"`
-	Quantity  int    `json:"quantity"`
-	ExpReward int    `json:"expReward,omitempty"`
+	BugReward *InventoryItemStack `json:"-"`
+	ItemID    string              `json:"itemId"`
+	Quantity  int                 `json:"quantity"`
+	ExpReward int                 `json:"expReward,omitempty"`
 }
 
 type harvestPlantResponse struct {
-	Inventory PlayerInventory `json:"inventory"`
-	Garden    PlayerGarden    `json:"garden"`
-	Reward    harvestReward   `json:"reward"`
-	Resources PlayerResources `json:"resources"`
-	LevelUp   *LevelUpResult  `json:"levelUp,omitempty"`
+	BugReward *InventoryItemStack `json:"bugReward,omitempty"`
+	Inventory PlayerInventory     `json:"inventory"`
+	Garden    PlayerGarden        `json:"garden"`
+	Reward    harvestReward       `json:"reward"`
+	Resources PlayerResources     `json:"resources"`
+	LevelUp   *LevelUpResult      `json:"levelUp,omitempty"`
 }
 
 type destroyDeadPlantPayload struct {
@@ -739,8 +741,9 @@ type treatPlantDiseasePayload struct {
 }
 
 type treatPlantDiseaseResponse struct {
-	Inventory PlayerInventory `json:"inventory"`
-	Garden    PlayerGarden    `json:"garden"`
+	BugReward *InventoryItemStack `json:"bugReward,omitempty"`
+	Inventory PlayerInventory     `json:"inventory"`
+	Garden    PlayerGarden        `json:"garden"`
 }
 
 // TreatPlantDiseaseRPC consumes a treatment item, clears plant disease, and adds protection time.
@@ -804,7 +807,8 @@ func TreatPlantDiseaseRPC(
 	gardenCopy := garden
 	updateGardenDiseaseState(&gardenCopy, now)
 	invCopy := inv
-	if err := treatAndCollectBug(&gardenCopy, &invCopy, body.SlotID, body.ItemID, now); err != nil {
+	bugReward, err := treatAndCollectBug(&gardenCopy, &invCopy, body.SlotID, body.ItemID, now)
+	if err != nil {
 		return "", err
 	}
 
@@ -842,7 +846,7 @@ func TreatPlantDiseaseRPC(
 		return "", runtime.NewError("failed to save (retry)", 13)
 	}
 
-	out := treatPlantDiseaseResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy}
+	out := treatPlantDiseaseResponse{Inventory: normalizePlayerInventory(invCopy), Garden: gardenCopy, BugReward: bugReward}
 	raw, err := json.Marshal(out)
 	if err != nil {
 		return "", err
@@ -917,6 +921,11 @@ func HarvestPlantInPotRPC(
 	if err := AddItem(&invCopy, reward.ItemID, reward.Quantity); err != nil {
 		return "", err
 	}
+	if reward.BugReward != nil {
+		if err := AddInventoryItem(&invCopy, reward.BugReward.ItemID, reward.BugReward.Quantity); err != nil {
+			return "", err
+		}
+	}
 
 	var levelUp *LevelUpResult
 	resourcesCopy, resourcesVer, err := readPlayerResources(ctx, nk, userID)
@@ -985,6 +994,7 @@ func HarvestPlantInPotRPC(
 	}
 
 	out := harvestPlantResponse{
+		BugReward: reward.BugReward,
 		Inventory: normalizePlayerInventory(invCopy),
 		Garden:    gardenCopy,
 		Reward:    reward,

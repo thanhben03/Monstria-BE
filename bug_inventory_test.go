@@ -62,6 +62,9 @@ func TestCollectBugRPC(t *testing.T) {
 				if response.Garden.Placements[0].Plant.Disease != nil {
 					t.Fatal("bug not cleared")
 				}
+				if response.BugReward == nil || response.BugReward.ItemID != bugID || response.BugReward.Quantity != 1 {
+					t.Fatalf("missing confirmed bug reward for UI: %s", result)
+				}
 				quantities := map[string]int{}
 				for _, stack := range response.Inventory.Items {
 					quantities[stack.ItemID] = stack.Quantity

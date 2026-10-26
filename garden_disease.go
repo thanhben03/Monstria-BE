@@ -243,33 +243,42 @@ func diseaseDamagePerTick(diseaseType string) int {
 	return 1
 }
 
-func treatAndCollectBug(g *PlayerGarden, inv *PlayerInventory, slotID, itemID string, now int64) error {
+func bugRewardForDisease(disease *PlantDisease) (*InventoryItemStack, error) {
+	if disease == nil {
+		return nil, nil
+	}
+	bugType := strings.TrimSpace(disease.Type)
+	for _, definition := range diseaseDefinitions {
+		if definition.Type == bugType {
+			return &InventoryItemStack{ItemID: "bug_" + bugType, Quantity: 1}, nil
+		}
+	}
+	return nil, runtime.NewError("unknown bug type", 3)
+}
+
+func treatAndCollectBug(g *PlayerGarden, inv *PlayerInventory, slotID, itemID string, now int64) (*InventoryItemStack, error) {
 	idx := findPlacementIndex(g, strings.TrimSpace(slotID))
 	if idx < 0 || g.Placements[idx].Plant == nil {
-		return runtime.NewError("no plant in this slot", 3)
+		return nil, runtime.NewError("no plant in this slot", 3)
 	}
 	plant := g.Placements[idx].Plant
 	if plant.Health < 1 || plant.Disease == nil {
-		return runtime.NewError("no living plant with a bug in this slot", 3)
+		return nil, runtime.NewError("no living plant with a bug in this slot", 3)
 	}
-	bugType := strings.TrimSpace(plant.Disease.Type)
-	knownBug := false
-	for _, definition := range diseaseDefinitions {
-		if definition.Type == bugType {
-			knownBug = true
-			break
-		}
-	}
-	if !knownBug {
-		return runtime.NewError("unknown bug type", 3)
+	reward, err := bugRewardForDisease(plant.Disease)
+	if err != nil {
+		return nil, err
 	}
 	if err := gardenTreatPlantDisease(g, slotID, itemID, now); err != nil {
-		return err
+		return nil, err
 	}
 	if err := ConsumeOneItem(inv, itemID); err != nil {
-		return err
+		return nil, err
 	}
-	return AddInventoryItem(inv, "bug_"+bugType, 1)
+	if err := AddInventoryItem(inv, reward.ItemID, reward.Quantity); err != nil {
+		return nil, err
+	}
+	return reward, nil
 }
 
 func gardenTreatPlantDisease(g *PlayerGarden, slotID string, itemID string, nowUnix int64) error {
