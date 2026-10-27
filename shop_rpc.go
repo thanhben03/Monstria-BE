@@ -70,6 +70,13 @@ func GetShopCatalogRPC(
 
 	category := strings.TrimSpace(strings.ToLower(body.Category))
 	defs := listShopItemDefinitionsForCategoryFrom(definitions, category)
+	available := make([]ShopItemDefinition, 0, len(defs))
+	for _, def := range defs {
+		if !def.Disabled {
+			available = append(available, def)
+		}
+	}
+	defs = available
 	pageItems, pagination := paginateShopItemDefinitions(defs, body.Page, body.PageSize)
 	resources, _, err := readPlayerResources(ctx, nk, userID)
 	if err != nil {
@@ -339,7 +346,7 @@ func grantShopItemQuantity(inv *PlayerInventory, def ShopItemDefinition, quantit
 		return AddSeed(inv, def.GrantItemID, quantity)
 	case shopGrantTypeDecor:
 		return AddItem(inv, def.GrantItemID, quantity)
-	case shopGrantTypeItem:
+	case shopGrantTypeItem, shopGrantTypeFertilizer:
 		return AddItem(inv, def.GrantItemID, quantity)
 	default:
 		return runtime.NewError("grantType is invalid", 13)

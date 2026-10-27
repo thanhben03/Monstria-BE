@@ -444,6 +444,47 @@
 				"goldPerHour": 5
 			}
 		],
+		"fertilizer": [
+			{
+				"shopItemId": "fertilizer_15",
+				"grantType": "fertilizer",
+				"grantItemId": "fertilizer_15",
+				"nameItem": "Phân bón 15%",
+				"quantity": 1,
+				"coinPrice": 100,
+				"gemPrice": 0,
+				"requiredLevel": 1,
+				"disabled": true,
+				"summary": "Giảm 15% thời gian sinh trưởng còn lại.",
+				"desc": "Mỗi cây chỉ được bón một lần sau khi tưới nước. Mua xong, kéo phân bón từ kho lên cây để sử dụng."
+			},
+			{
+				"shopItemId": "fertilizer_30",
+				"grantType": "fertilizer",
+				"grantItemId": "fertilizer_30",
+				"nameItem": "Phân bón 30%",
+				"quantity": 1,
+				"coinPrice": 250,
+				"gemPrice": 0,
+				"requiredLevel": 5,
+				"disabled": true,
+				"summary": "Giảm 30% thời gian sinh trưởng còn lại.",
+				"desc": "Mỗi cây chỉ được bón một lần sau khi tưới nước. Mua xong, kéo phân bón từ kho lên cây để sử dụng."
+			},
+			{
+				"shopItemId": "fertilizer_50",
+				"grantType": "fertilizer",
+				"grantItemId": "fertilizer_50",
+				"nameItem": "Phân bón 50%",
+				"quantity": 1,
+				"coinPrice": 500,
+				"gemPrice": 0,
+				"requiredLevel": 10,
+				"disabled": true,
+				"summary": "Giảm 50% thời gian sinh trưởng còn lại.",
+				"desc": "Mỗi cây chỉ được bón một lần sau khi tưới nước. Mua xong, kéo phân bón từ kho lên cây để sử dụng."
+			}
+		],
 		"decor": [
 			{
 				"shopItemId": "decor_chuong_gio",

@@ -25,10 +25,11 @@ const (
 	shopCurrencyCoin = "coin"
 	shopCurrencyGem  = "gem"
 
-	shopGrantTypePot   = "pot"
-	shopGrantTypeSeed  = "seed"
-	shopGrantTypeDecor = "decor"
-	shopGrantTypeItem  = "item"
+	shopGrantTypePot        = "pot"
+	shopGrantTypeSeed       = "seed"
+	shopGrantTypeDecor      = "decor"
+	shopGrantTypeItem       = "item"
+	shopGrantTypeFertilizer = "fertilizer"
 )
 
 type ShopItemDefinition struct {
@@ -318,6 +319,8 @@ func normalizeShopGrantType(grantType string) string {
 		return shopGrantTypePot
 	case shopGrantTypeSeed:
 		return shopGrantTypeSeed
+	case shopGrantTypeFertilizer:
+		return shopGrantTypeFertilizer
 	case "decoration", shopGrantTypeDecor:
 		return shopGrantTypeDecor
 	case "flower", "tool", shopGrantTypeItem:
@@ -507,6 +510,8 @@ func shopCategoryForGrantType(grantType string) string {
 		return "pot"
 	case shopGrantTypeSeed:
 		return "seed"
+	case shopGrantTypeFertilizer:
+		return "fertilizer"
 	case shopGrantTypeDecor:
 		return "decor"
 	default:
@@ -576,6 +581,9 @@ func shopItemDefinitionWithDetailText(def ShopItemDefinition) ShopItemDefinition
 	case shopGrantTypeDecor:
 		def.DetailMainText = strings.TrimSpace(def.Summary)
 		def.DetailSideText = renderDecorShopItemSideText(def)
+	case shopGrantTypeFertilizer:
+		def.DetailMainText = strings.TrimSpace(def.Summary)
+		def.DetailSideText = fmt.Sprintf("%s\n\nCấp độ yêu cầu: %d", def.Desc, normalizedRequiredLevel(def.RequiredLevel))
 	}
 	return def
 }
